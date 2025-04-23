@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         volunteer: '/volunteer-dashboard',
       };
 
+
       navigate(routes[user.role] || '/');
     } catch (error) {
       console.error('Login failed:', error);

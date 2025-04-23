@@ -17,7 +17,7 @@ export const register = async (req: Request, res: Response) => {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword=await bcrypt.hashSync(password, 10);
 
     // Create and save new user
     const user = new User({
@@ -51,7 +51,11 @@ export const login = async (req: Request, res: Response) => {
     if (!user.password) {
       return res.status(500).json({ message: 'User password is missing' });
     }
-    const isMatch = await bcrypt.compare(password, user.password);
+
+    const hashedPassword = user.password;
+
+    const isMatch = await bcrypt.compare(password, hashedPassword);
+    
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign(
@@ -60,7 +64,7 @@ export const login = async (req: Request, res: Response) => {
       { expiresIn: '7d' }
     );
 
-    res.status(200).json({ token });
+    res.status(200).json({ token,user });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Something went wrong during login' });
