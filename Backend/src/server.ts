@@ -6,7 +6,7 @@ import connectDB from './config/db';
 import authRoutes from './routes/authRoutes';
 import foodRoutes from './routes/foodRoutes';
 import notificationRoutes from './routes/notificationRoutes';
-
+import adminRoutes from "./routes/adminRoutes";
 dotenv.config();
 connectDB();
 
@@ -15,6 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/food', foodRoutes);
 app.use('/api/notifications', notificationRoutes);
 
