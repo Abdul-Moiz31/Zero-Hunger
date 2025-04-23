@@ -10,12 +10,12 @@ const userSchema = new Schema({
   resetPasswordToken: String,
   resetPasswordExpires: Date,
   isApproved: { type: Boolean, default: false },
-
   // Necessary  Fields for volunteer
-  ngoId: { type: Schema.Types.ObjectId, ref: 'User'},
+  ngoId: { type: Schema.Types.ObjectId, ref: 'User'}
 },{
   timestamps:true
 });
+
 
 
 export default model('User', userSchema);

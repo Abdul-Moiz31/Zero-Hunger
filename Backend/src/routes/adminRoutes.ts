@@ -1,3 +1,4 @@
+
 import { Router } from "express";
 import { deleteUser, getDashboardStats, updateUserStatus } from "../controllers/adminController";
 import { authMiddleware } from "../middlewares/authMiddleware";
@@ -19,3 +20,4 @@ router.put('/user-status/update',updateUserStatus);
 router.delete('/users/:userId',deleteUser);
 
 export default router;
+
