@@ -92,7 +92,6 @@ const AdminDashboard = () => {
     "suspend" | "delete" | null
   >(null);
   const [users, setUsers] = useState<User[]>(mockUsers);
-  const [alerts, setAlerts] = useState<Alert[]>(mockAlerts);
 
   const {
     getDashboardStats,
