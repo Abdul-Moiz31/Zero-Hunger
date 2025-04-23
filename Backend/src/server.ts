@@ -5,6 +5,7 @@ import connectDB from './config/db';
 
 import authRoutes from './routes/authRoutes';
 import foodRoutes from './routes/foodRoutes';
+import donorRoutes from './routes/donorRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 
 import adminRoutes from "./routes/adminRoutes";
@@ -18,6 +19,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/donors', donorRoutes);
 app.use('/api/food', foodRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes); 
