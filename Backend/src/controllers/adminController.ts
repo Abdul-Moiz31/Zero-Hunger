@@ -20,7 +20,9 @@ export const getDashboardStats = async (req, res) => {
 }
 
 
-export const updateUserStatus=async (req,res)=>{
+import { Request, Response } from "express";
+
+export const updateUserStatus=async (req: Request, res: Response)=>{
     try{
        const {userId,status}=req.body;
 
@@ -53,7 +55,7 @@ export const updateUserStatus=async (req,res)=>{
 }
 
 
-export const deleteUser=async (req,res)=>{
+export const deleteUser=async (req: Request, res: Response)=>{
     try{
         const {userId}=req.params;
  
