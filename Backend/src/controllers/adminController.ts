@@ -1,43 +1,78 @@
-import User from '../models/User';
-import { Request, Response } from 'express';
+import User from "../models/User"
+
+// @ts-ignore
+export const getDashboardStats = async (req, res) => {
+    try {
 
 
-export const approveVolunteer = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const volunteer = await User.findById(id);
+        // all users
 
-    if (!volunteer || volunteer.role !== 'volunteer') {
-      return res.status(404).json({ message: 'Volunteer not found' });
+        const users=await User.find({role: {$ne: "admin"}});
+
+        const ngoCount=await User.countDocuments({role:"ngo"});
+        const donorCount=await User.countDocuments({role:"donor"});
+        const volunteerCount=await User.countDocuments({role:"volunteer"});
+
+        return res.status(200).json({ngoCount,donorCount,volunteerCount,users})
+    }catch(error){
+        res.status(500).json(error)
     }
+}
 
-    volunteer.isApproved = true;
-    await volunteer.save();
 
-    res.status(200).json({ message: 'Volunteer approved successfully' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Something went wrong' });
-  }
-};
+export const updateUserStatus=async (req,res)=>{
+    try{
+       const {userId,status}=req.body;
 
-export const getPendingVolunteers = async (_req: Request, res: Response) => {
-  try {
-    const volunteers = await User.find({ role: 'volunteer', isApproved: false });
-    res.json(volunteers);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error fetching pending volunteers' });
-  }
-};
+       if(!userId){
+        return res.status(400).json({message:"User Id required"})
 
-export const getVolunteersByNgo = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const volunteers = await User.find({ role: 'volunteer', ngoId: id, isApproved: true });
-    res.json(volunteers);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error fetching volunteers for NGO' });
-  }
-};
+       }
+
+       if(status==undefined){
+         return res.status(400).json({message:"Bad Request"})
+
+       }
+
+
+       const userExist=await User.findById(userId);
+
+       if(!userExist){
+        throw new Error("User does not exist.");
+       }
+
+
+       await User.findByIdAndUpdate(userId,{
+        isApproved:status
+       })
+       
+    res.status(200).json({message:"Status Updated Sucessfully"});       
+    }catch(error){
+        res.status(500).json(error)
+    }
+}
+
+
+export const deleteUser=async (req,res)=>{
+    try{
+        const {userId}=req.params;
+ 
+        if(!userId){
+         return res.status(400).json({message:"User Id required"})
+ 
+        }
+ 
+        const userExist=await User.findById(userId);
+ 
+        if(!userExist){
+         throw new Error("User does not exist.");
+        }
+ 
+ 
+        await User.findByIdAndDelete(userId)
+        
+     res.status(200).json({message:"User Deleted Sucessfully"});       
+     }catch(error){
+         res.status(500).json(error)
+     }
+}
