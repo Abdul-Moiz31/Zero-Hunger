@@ -20,6 +20,7 @@ import VolunteerDashboard from './components/dashboard/VolunteerDashboard';
 import AdminDashboard from './components/dashboard/AdminDashboard';
 import UnauthorizedPage from './components/UnauthorizedPage';
 import Listings from './components/Listings';
+import { AdminProvider } from './contexts/AdminContext';
 
 const HomePage = () => (
   <div className="min-h-screen">
@@ -40,6 +41,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <AdminProvider>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
@@ -94,6 +96,7 @@ function App() {
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </AdminProvider>
       </AuthProvider>
     </Router>
   );
