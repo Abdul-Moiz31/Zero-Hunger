@@ -39,7 +39,7 @@ const SignInForm: React.FC = () => {
       if (!response?.user?.role) {
         throw new Error('Invalid response from server');
       }
-
+      
       // Redirect user based on their role
       navigate(`/dashboard/${response.user.role}`);
     } catch (err: unknown) {
