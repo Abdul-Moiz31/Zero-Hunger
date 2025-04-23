@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, Phone, Building } from 'lucide-react';
 // import { useNavigate } from 'react-router-dom';
-import { UserRole } from '../../types/auth';
+import { UserRole , User as AuthUser } from '../../types/auth';
 import { useAuth } from '../../contexts/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const SignUpForm = () => {
-  // Removed unused navigate declaration
-  const { signIn } = useAuth();
+type SignUpForm = {
+  onSuccess: (user: AuthUser) => void;
+};
 
+const SignUpForm = () => {
+  const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');

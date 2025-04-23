@@ -22,3 +22,39 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+# Node.js
+node_modules/
+.env
+dist/
+coverage/
+.nyc_output/
+
+
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Build outputs (React/Next.js frontend)
+Frontend/.next/
+Frontend/build/
+Frontend/node_modules/
+Frontend/.env.local
+Frontend/.env.production
+Frontend/.env.development
+
+# Backend
+Backend/node_modules/
+Backend/.env
+
+# Misc
+*.local
+.env.*.local
+*.swp
+

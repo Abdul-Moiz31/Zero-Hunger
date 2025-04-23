@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import { Mail, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { User } from '@/types/auth';
 
+
+type SignInForm = {
+  onSuccess: (user: User) => void;
+};
 type AuthResponse = {
   user: {
     role: string;
-    // Add any other user properties you rely on
   };
 };
 

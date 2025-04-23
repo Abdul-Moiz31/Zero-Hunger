@@ -1,15 +1,6 @@
 import { User, UserRole } from '@/types/auth';
 
-// Mock user data storage
-const users = new Map<string, User>();
-
-// Mock admin user
-users.set('admin@zerohunger.com', {
-  id: '1',
-  email: 'admin@zerohunger.com',
-  fullName: 'System Administrator',
-  role: 'admin'
-});
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; // adjust if needed
 
 class AuthService {
   private static instance: AuthService;
@@ -26,36 +17,72 @@ class AuthService {
   }
 
   async signUp(data: { email: string; password: string; fullName: string; role: UserRole }): Promise<User> {
-    // Check if email exists
-    if (users.has(data.email)) {
-      throw new Error('Email already exists');
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+        name: data.fullName,
+        role: data.role
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Sign up failed');
     }
 
-    // Create new user
-    const user: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      email: data.email,
-      fullName: data.fullName,
-      role: data.role
-    };
-
-    users.set(data.email, user);
+    const user = await response.json();
     this.setCurrentUser(user);
     return user;
   }
 
   async signIn(data: { email: string; password: string }): Promise<User> {
-    const user = users.get(data.email);
-    if (!user) {
-      throw new Error('Invalid login credentials');
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
     }
 
+    const user = await response.json();
     this.setCurrentUser(user);
     return user;
   }
 
   async signOut(): Promise<void> {
     this.setCurrentUser(null);
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const response = await fetch(`${API_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to send reset email');
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const response = await fetch(`${API_URL}/auth/reset-password/${token}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: newPassword })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Password reset failed');
+    }
   }
 
   async getCurrentUser(): Promise<User | null> {
@@ -73,13 +100,12 @@ class AuthService {
   }
 
   private notifyListeners(user: User | null) {
-    this.listeners.forEach(listener => listener(user));
+    this.listeners.forEach((listener) => listener(user));
   }
 
   onAuthStateChange(callback: (user: User | null) => void) {
     this.listeners.add(callback);
-    
-    // Check local storage for existing session
+
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {

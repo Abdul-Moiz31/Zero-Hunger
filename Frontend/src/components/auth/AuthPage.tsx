@@ -3,14 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { UtensilsCrossed, ArrowRight } from 'lucide-react';
 import SignInForm from './SignInForm';
 import SignUpForm from './SignUpForm';
+import { User } from '@/types/auth'; // ✅ Import the correct User type
 
 const AuthPage = () => {
   const [isSignIn, setIsSignIn] = useState(true);
   const navigate = useNavigate();
 
-  const handleAuthSuccess = (userData: any) => {
+  // ✅ Use correct type here instead of 'any'
+  const handleAuthSuccess = (userData: User) => {
     localStorage.setItem('user', JSON.stringify(userData));
-    navigate(`/dashboard/${userData.role}`);
+    navigate(`/${userData.role}-dashboard`);
   };
 
   return (
@@ -42,24 +44,14 @@ const AuthPage = () => {
             Join our community of donors, NGOs, and volunteers working together to eliminate hunger and reduce food waste.
           </p>
           <div className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <div className="bg-white/20 p-2 rounded-full">
-                <ArrowRight className="w-5 h-5" />
+            {['Connect with local food donors', 'Coordinate efficient food distribution', 'Make a real impact in your community'].map((text, i) => (
+              <div key={i} className="flex items-center space-x-4">
+                <div className="bg-white/20 p-2 rounded-full">
+                  <ArrowRight className="w-5 h-5" />
+                </div>
+                <p>{text}</p>
               </div>
-              <p>Connect with local food donors</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="bg-white/20 p-2 rounded-full">
-                <ArrowRight className="w-5 h-5" />
-              </div>
-              <p>Coordinate efficient food distribution</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="bg-white/20 p-2 rounded-full">
-                <ArrowRight className="w-5 h-5" />
-              </div>
-              <p>Make a real impact in your community</p>
-            </div>
+            ))}
           </div>
         </div>
       </div>
