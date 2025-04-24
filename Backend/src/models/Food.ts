@@ -1,7 +1,7 @@
 import { Schema, model } from 'mongoose';
 
 const foodSchema = new Schema({
-  userId: { type: Schema.Types.ObjectId, ref: 'User' },
+  donorId: { type: Schema.Types.ObjectId, ref: 'User' },
   title: String,
   description: String,
   quantity: Number,
@@ -15,7 +15,8 @@ const foodSchema = new Schema({
   volunteerId: { type: Schema.Types.ObjectId, ref: 'User' },
   delivered_time: Date,
   temperature_requirements: String,
-  dietary_info: String
+  dietary_info: String,
+  img: String,
 });
 
 export default model('Food', foodSchema);
