@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { getVolunteers } from '../controllers/ngoController';
+import { getMyVolunteers } from '../controllers/ngoController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-router.get('/volunteers', authMiddleware(['ngo']), getVolunteers);
+router.get('/volunteers', authMiddleware(['ngo']), getMyVolunteers);
 
 export default router;
