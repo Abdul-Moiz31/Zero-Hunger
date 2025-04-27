@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, useState } from "react";
 import axios from "axios";
 
@@ -7,6 +8,7 @@ interface AdminContextType{
     donorCount: number,
     volunteerCount: number,
     },
+    
     users:any[],
     getDashboardStats: () => void,
     updateUserStatus:(data:any) =>  void,
@@ -52,7 +54,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function updateUserStatus(data){
+  async function updateUserStatus(data:any){
     try {
          await axios.put(
           `${import.meta.env.VITE_API_BASE_URL}/admin/user-status/update`,{
@@ -67,7 +69,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       }
   }
 
-  async function deleteUser(userId){
+  async function deleteUser(userId : any){
     try {
          await axios.delete(
           `${import.meta.env.VITE_API_BASE_URL}/admin/users/${userId}`

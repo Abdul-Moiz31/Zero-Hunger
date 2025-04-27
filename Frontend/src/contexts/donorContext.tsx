@@ -2,9 +2,9 @@ import React, { createContext, useContext, useState } from "react";
 import axios from "axios";
 
 interface DonorStats {
-  totalDonationCount: number;
-  pendingPickups: number;
-  completedPickups: number;
+    totalDonations: number;
+    pendingDonations: number;
+    completedDonations: number;
 }
 
 interface DonorContextType {
@@ -24,9 +24,9 @@ export function useDonorContext() {
 
 export function DonorProvider({ children }: { children: React.ReactNode }) {
   const [stats, setStats] = useState<DonorStats>({
-    totalDonationCount: 0,
-    pendingPickups: 0,
-    completedPickups: 0,
+    totalDonations: 0,
+    pendingDonations: 0,
+    completedDonations: 0,
   });
 
   async function getDonorStats() {
@@ -36,19 +36,18 @@ export function DonorProvider({ children }: { children: React.ReactNode }) {
       );
 
       const {
-        totalDonationCount,
-        pendingPickups,
-        completedPickups,
+        totalDonations,
+        pendingDonations,
+        completedDonations,
       } = response.data;
 
       setStats({
-        totalDonationCount,
-        pendingPickups,
-        completedPickups,
+        totalDonations,
+        pendingDonations,
+        completedDonations
       });
     } catch (error) {
-      // @ts-expect-error Error Type Unknown
-      throw new Error(error?.message || "Something went wrong");
+      console.error("Failed to fetch donor stats:", error);
     }
   }
 

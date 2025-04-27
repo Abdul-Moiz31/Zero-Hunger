@@ -1,31 +1,7 @@
-import React, { useState } from 'react';
-import { Package2, Clock, CheckCircle, Plus, X, Calendar, Clock3, Info } from 'lucide-react';
-
-// Mock data
-const mockDonations = [
-  {
-    id: '1',
-    title: 'Fresh Produce',
-    description: 'Assorted vegetables and fruits',
-    quantity: 50,
-    quantity_unit: 'kg',
-    expiry_time: '2024-03-20T15:00:00Z',
-    pickup_window_start: '2024-03-19T10:00:00Z',
-    pickup_window_end: '2024-03-19T12:00:00Z',
-    status: 'available',
-    temperature_requirements: 'Refrigerated',
-    dietary_info: 'Vegetarian'
-  }
-];
-
-const mockNotifications = [
-  {
-    id: '1',
-    title: 'Donation Picked Up',
-    message: 'Your donation has been picked up by volunteer John',
-    created_at: new Date().toISOString()
-  }
-];
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import React, { useState  , useEffect} from 'react';
+import { useDonorContext  } from '@/contexts/donorContext';
+import { Package2, Clock, CheckCircle, Plus, X, Calendar, Clock3} from 'lucide-react';
 
 interface FoodListing {
   id: string;
@@ -44,9 +20,8 @@ interface FoodListing {
 const DonorDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showDonationForm, setShowDonationForm] = useState(false);
-  const [donations, setDonations] = useState<FoodListing[]>(mockDonations);
+  const [donations, setDonations] = useState<FoodListing[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>(mockNotifications);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -59,6 +34,11 @@ const DonorDashboard = () => {
     temperature_requirements: '',
     dietary_info: ''
   });
+
+  const {
+    getDonorStats,
+      stats,
+    } = useDonorContext();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +62,10 @@ const DonorDashboard = () => {
       dietary_info: ''
     });
   };
+
+  useEffect(() => {
+    getDonorStats();
+  }, [getDonorStats]);
 
   const DonationForm = () => (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -240,21 +224,21 @@ const DonorDashboard = () => {
         <DashboardCard
           icon={Package2}
           title="Total Donations"
-          value={donations.length.toString()}
+          stats={[{ label: 'Total Donations', value: String(stats.totalDonations) }]}
           trend="+3 this week"
           trendUp={true}
         />
         <DashboardCard
           icon={Clock}
           title="Pending Pickups"
-          value={donations.filter(d => d.status === 'available').length.toString()}
+          stats={[{ label: 'Pending Pickups', value: String(stats.pendingDonations) }]}
           trend="2 expiring soon"
           trendUp={false}
         />
         <DashboardCard
           icon={CheckCircle}
           title="Completed"
-          value={donations.filter(d => d.status === 'completed').length.toString()}
+          stats={[{ label: 'Completed Donations', value: String(stats.completedDonations ) }]}
           trend="+12% this month"
           trendUp={true}
         />
@@ -292,28 +276,6 @@ const DonorDashboard = () => {
                   }`}>
                     {donation.status.charAt(0).toUpperCase() + donation.status.slice(1)}
                   </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Recent Notifications</h2>
-            <div className="space-y-4">
-              {notifications.map((notification) => (
-                <div key={notification.id} className="flex items-start space-x-4 pb-4 border-b border-gray-100">
-                  <div className="bg-blue-100 p-2 rounded-lg">
-                    <Info className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium">{notification.title}</h3>
-                    <p className="text-sm text-gray-600">{notification.message}</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {new Date(notification.created_at).toLocaleString()}
-                    </p>
-                  </div>
                 </div>
               ))}
             </div>
@@ -439,31 +401,43 @@ const DonorDashboard = () => {
   );
 };
 
-const DashboardCard = ({ 
-  icon: Icon, 
-  title, 
-  value, 
+const DashboardCard = ({
+  icon: Icon,
+  title,
+  stats = [],  // Ensure stats defaults to an empty array if undefined
   trend,
-  trendUp 
-}: { 
+  trendUp,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: any;
   title: string;
-  value: string;
+  stats: { label: string; value: string }[];
   trend: string;
   trendUp: boolean;
 }) => (
-  <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-    <div className="flex items-center space-x-4">
+  <div className="bg-white rounded-xl shadow-sm p-6">
+    <div className="flex items-center space-x-3 mb-6">
       <div className="bg-green-100 p-3 rounded-lg">
         <Icon className="w-6 h-6 text-green-600" />
       </div>
-      <div>
-        <h3 className="text-sm font-medium text-gray-600">{title}</h3>
-        <p className="text-2xl font-bold text-gray-800">{value}</p>
+      <h3 className="text-lg font-semibold">{title}</h3>
+    </div>
+    <div className="space-y-4">
+      {stats.length > 0 ? (
+        stats.map((stat, index) => (
+          <div key={index} className="flex justify-between items-center">
+            <span className="text-gray-600">{stat.label}</span>
+            <span className="font-semibold">{stat.value}</span>
+          </div>
+        ))
+      ) : (
+        <p className="text-gray-500">No stats available</p>
+      )}
+      {trend && (
         <p className={`text-sm ${trendUp ? 'text-green-600' : 'text-gray-600'}`}>
           {trend}
         </p>
-      </div>
+      )}
     </div>
   </div>
 );
