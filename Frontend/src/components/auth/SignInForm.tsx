@@ -12,6 +12,7 @@ type AuthResponse = {
   user: {
     role: string;
   };
+  token: string; 
 };
 
 const SignInForm: React.FC = () => {
@@ -33,17 +34,20 @@ const SignInForm: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-
+  
     try {
-      const response = (await signIn(
+      const response = await signIn(
         formData.email.trim(),
         formData.password.trim()
-      )) as unknown as AuthResponse;
-
+      ) as unknown as AuthResponse;
+  
       if (!response?.user?.role) {
         throw new Error('Invalid response from server');
       }
-      
+  
+      // No need to store token in localStorage since it's stored in cookies automatically
+      // The backend handles cookie storage, so no need to manually store it here
+  
       // Redirect user based on their role
       navigate(`/dashboard/${response.user.role}`);
     } catch (err: unknown) {

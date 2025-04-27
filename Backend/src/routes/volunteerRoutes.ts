@@ -1,9 +1,9 @@
-import { Router } from 'express';
-import { registerVolunteer } from "../controllers/volunteerController";
+import express from "express";
+import { getVolunteerStats } from "../controllers/volunteerController";
+import { authMiddleware } from "../middlewares/authMiddleware";
 
-const router = Router();
+const router = express.Router();
 
-router.post("/volunteer/register", registerVolunteer);
+router.get("/stats", authMiddleware(['volunteer']),  getVolunteerStats);
 
-
-export default Router();
+export default router;
