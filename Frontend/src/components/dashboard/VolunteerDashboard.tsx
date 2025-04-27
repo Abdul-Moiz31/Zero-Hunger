@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useVolunteerContext } from '@/contexts/volunteerContext';
 import {
   Package2,
   Route,
@@ -23,36 +24,35 @@ interface Task {
   };
 }
 
-interface Stats {
-  total_tasks: number;
-  completed_tasks: number;
-  average_rating: number;
-  total_hours: number;
-}
+
 
 const VolunteerDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [stats, setStats] = useState<Stats>({
-    total_tasks: 0,
-    completed_tasks: 0,
-    average_rating: 0,
-    total_hours: 0,
-  });
+    
+  const {
+    getVolunteerStats,
+        stats,
+      } = useVolunteerContext();
+
+  useEffect(() => {
+    getVolunteerStats();
+      }, [getVolunteerStats]);
+
+
+    
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const taskRes = await fetch('/api/volunteer/tasks');
-        const statsRes = await fetch('/api/volunteer/stats');
+        const taskRes = await fetch('/volunteer/tasks');
 
         const taskData = await taskRes.json();
-        const statsData = await statsRes.json();
+
 
         setTasks(taskData);
-        setStats(statsData);
       } catch (error) {
         console.error('Error fetching volunteer data:', error);
       }
@@ -60,6 +60,9 @@ const VolunteerDashboard = () => {
 
     fetchData();
   }, []);
+  
+
+  
 
   const updateTaskStatus = async (taskId: string, newStatus: Task['status']) => {
     try {
@@ -128,26 +131,21 @@ const VolunteerDashboard = () => {
           <Package2 className="w-8 h-8 text-green-600 mb-2" />
           <h3 className="text-lg font-semibold">Available Tasks</h3>
           <p className="text-3xl font-bold">
-            {tasks.filter((t) => t.status === 'available').length}
+            {stats.available_Task}
           </p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <Route className="w-8 h-8 text-blue-600 mb-2" />
           <h3 className="text-lg font-semibold">In Progress</h3>
           <p className="text-3xl font-bold">
-            {tasks.filter((t) => t.status === 'in_progress').length}
+            {stats.in_progress_task}
           </p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <CheckCircle className="w-8 h-8 text-purple-600 mb-2" />
           <h3 className="text-lg font-semibold">Completed Today</h3>
           <p className="text-3xl font-bold">
-            {tasks.filter(
-              (t) =>
-                t.status === 'completed' &&
-                new Date(t.pickup_window_end).toDateString() ===
-                  new Date().toDateString()
-            ).length}
+            {stats.Completed_task}
           </p>
         </div>
       </div>
@@ -221,24 +219,24 @@ const VolunteerDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600">Total Tasks</p>
-            <p className="text-2xl font-bold">{stats.total_tasks}</p>
+            <p className="text-2xl font-bold">5</p>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600">Completed Tasks</p>
-            <p className="text-2xl font-bold">{stats.completed_tasks}</p>
+            <p className="text-2xl font-bold">0</p>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600">Average Rating</p>
             <div className="flex items-center">
               <p className="text-2xl font-bold mr-2">
-                {stats.average_rating.toFixed(1)}
+              <p className="text-2xl font-bold">3</p>
               </p>
               <Star className="w-5 h-5 text-yellow-400 fill-current" />
             </div>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600">Hours Contributed</p>
-            <p className="text-2xl font-bold">{Math.round(stats.total_hours)}</p>
+            <p className="text-2xl font-bold">7</p>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-// src/contexts/ngoContext.tsx
+
 import React, { createContext, useContext, useState } from "react";
 import axios from "axios";
 

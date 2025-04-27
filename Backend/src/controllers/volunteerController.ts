@@ -1,50 +1,22 @@
 import { Request, Response } from "express";
-import User from "../models/User";
-import bcrypt from "bcryptjs";
-import { sendConfirmationEmail } from "../emails/sendConfirmationEmail";
+import food from "../models/Food"; // Assuming food model is actually task model
 
-export const registerVolunteer = async (req: Request, res: Response) => {
-  const {
-    name,
-    email,
-    password,
-    ngoId,
-    contact_number,
-  } = req.body;
-
+// Volunteer Dashboard Stats
+export const getVolunteerStats = async (req: Request, res: Response) => {
   try {
+    const volunteerId = req.user._id; // Assuming user is authenticated
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res
-        .status(400)
-        .json({ message: "User already exists with this email" });
-    }
+    const available_Task = await food.countDocuments({ status: "available" }); // No volunteerId here!
+    const in_progress_task = await food.countDocuments({ volunteerId: volunteerId, status: "in_progress" });
+    const completed_task = await food.countDocuments({ volunteerId: volunteerId, status: "completed" });
 
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-  
-    const userPayload: any = {
-      name,
-      email,
-      password: hashedPassword,
-      role: "volunteer", 
-      contact_number,
-      ngoId,
-      isApproved: false,
-    };
-
-    const volunteer = new User(userPayload);
-    await volunteer.save();
-
-    await sendConfirmationEmail({ to: email, name, role: "volunteer" });
-
-    res.status(201).json({ message: "Volunteer registered successfully" });
+    res.status(200).json({
+      available_Task,
+      in_progress_task,
+      completed_task,
+    });
   } catch (error) {
-    console.error("Volunteer registration error:", error);
-    res
-      .status(500)
-      .json({ message: "Something went wrong during volunteer registration" });
+    console.error("Error fetching volunteer stats:", error);
+    res.status(500).json({ message: "Failed to fetch volunteer stats", error });
   }
 };
