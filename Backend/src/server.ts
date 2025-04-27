@@ -6,6 +6,7 @@ import connectDB from "./config/db";
 import authRoutes from "./routes/authRoutes";
 import foodRoutes from "./routes/foodRoutes";
 import donorRoutes from "./routes/donorRoutes";
+import ngoRoutes from "./routes/ngoRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 
 import adminRoutes from "./routes/adminRoutes";
@@ -23,6 +24,7 @@ app.use(
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("api/ngo" , ngoRoutes);
 app.use("/api/donor", donorRoutes);
 app.use("/api/food", foodRoutes);
 app.use("/api/notifications", notificationRoutes);

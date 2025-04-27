@@ -22,6 +22,7 @@ import UnauthorizedPage from './components/UnauthorizedPage';
 import Listings from './components/Listings';
 import { AdminProvider } from './contexts/AdminContext';
 import { DonorProvider } from './contexts/donorContext';
+import { NGOProvider } from './contexts/ngoContext';
 
 const HomePage = () => (
   <div className="min-h-screen">
@@ -42,6 +43,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+      <NGOProvider>
         <DonorProvider>
         <AdminProvider>
         <Routes>
@@ -100,6 +102,7 @@ function App() {
         </Routes>
         </AdminProvider>
         </DonorProvider>
+        </NGOProvider>
       </AuthProvider>
     </Router>
   );
