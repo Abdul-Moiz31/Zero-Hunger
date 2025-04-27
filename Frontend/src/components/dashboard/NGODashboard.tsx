@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState , useEffect } from 'react';
+import { useNGOContext  } from '@/contexts/ngoContext';
 import { Users, Package2, MapPin, Plus, Pencil, Trash2, X, Search, Filter } from 'lucide-react';
 
 interface Volunteer {
@@ -48,12 +50,21 @@ const NGODashboard = () => {
     address: ''
   });
 
+  const {
+    getNGOStats,
+        stats,
+      } = useNGOContext();
+
   const filteredVolunteers = volunteers.filter(volunteer => {
     const matchesSearch = volunteer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          volunteer.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || volunteer.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  useEffect(() => {
+    getNGOStats();
+    }, [getNGOStats]);
 
   const handleAddVolunteer = (e: React.FormEvent) => {
     e.preventDefault();
@@ -283,22 +294,22 @@ const NGODashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <DashboardCard
           icon={Package2}
-          title="Available Donations"
-          value="12"
+          title="Total Volunteers"
+          stats={String(stats.Volunteers)}
           trend="+3 from last week"
           trendUp={true}
         />
         <DashboardCard
           icon={Users}
-          title="Active Volunteers"
-          value={volunteers.length.toString()}
+          title="Total Donations"
+          stats={String(stats.total_donations)}
           trend="+2 this month"
           trendUp={true}
         />
         <DashboardCard
           icon={MapPin}
           title="Service Areas"
-          value="5"
+          stats={String(stats.completedDonations)}
           trend="Same as last month"
           trendUp={false}
         />
@@ -381,13 +392,13 @@ const NGODashboard = () => {
 const DashboardCard = ({ 
   icon: Icon, 
   title, 
-  value, 
+  stats, 
   trend,
   trendUp 
 }: { 
   icon: any;
   title: string;
-  value: string;
+  stats: string | { label: string; value: string }[];
   trend: string;
   trendUp: boolean;
 }) => (
@@ -398,7 +409,17 @@ const DashboardCard = ({
       </div>
       <div>
         <h3 className="text-sm font-medium text-gray-600">{title}</h3>
-        <p className="text-2xl font-bold text-gray-800">{value}</p>
+        {Array.isArray(stats) ? (
+          <ul className="text-2xl font-bold text-gray-800">
+            {stats.map((stat, index) => (
+              <li key={index}>
+                {stat.label}: {stat.value}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-2xl font-bold text-gray-800">{stats}</p>
+        )}
         <p className={`text-sm ${trendUp ? 'text-green-600' : 'text-gray-600'}`}>
           {trend}
         </p>
