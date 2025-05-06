@@ -23,6 +23,7 @@ import Listings from './components/Listings';
 import { AdminProvider } from './contexts/AdminContext';
 import { DonorProvider } from './contexts/donorContext';
 import { NGOProvider } from './contexts/ngoContext';
+import { VolunteerProvider } from  './contexts/volunteerContext';
 
 const HomePage = () => (
   <div className="min-h-screen">
@@ -43,6 +44,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+      <VolunteerProvider>
       <NGOProvider>
         <DonorProvider>
         <AdminProvider>
@@ -103,6 +105,7 @@ function App() {
         </AdminProvider>
         </DonorProvider>
         </NGOProvider>
+        </VolunteerProvider>
       </AuthProvider>
     </Router>
   );
