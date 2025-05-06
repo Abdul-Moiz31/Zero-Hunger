@@ -79,6 +79,13 @@ export const login = async (req: Request, res: Response) => {
       process.env.JWT_SECRET!,
       { expiresIn: "7d" }
     );
+    // Set the token in a secure, httpOnly cookie
+    res.cookie('token', token, {
+      httpOnly: true,  
+      secure: process.env.NODE_ENV === 'production',  
+      maxAge: 3600000,  
+    
+    });
 
     res.status(200).json({ token, user });
   } catch (error) {
@@ -104,6 +111,16 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const link = `http://localhost:5000/api/auth/reset-password/${token}`;
     await sendResetPasswordEmail(email, link);
 
+    res.status(200).json({
+      message: 'Logged in successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  
     res.json({ message: "Password reset link sent to your email" });
   } catch (err) {
     console.error(err);
