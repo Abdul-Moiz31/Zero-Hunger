@@ -80,11 +80,11 @@ export const login = async (req: Request, res: Response) => {
       { expiresIn: "7d" }
     );
     // Set the token in a secure, httpOnly cookie
-    res.cookie('token', token, {
-      httpOnly: true,  
-      secure: process.env.NODE_ENV === 'production',  
-      maxAge: 3600000,  
-    
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: false, // use HTTPS in prod
+      sameSite: "none", // Crucial for localhost cross-origin cookies
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     res.status(200).json({ token, user });

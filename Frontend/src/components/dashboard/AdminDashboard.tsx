@@ -4,60 +4,19 @@ import {
   Building2,
   UserCheck,
   AlertTriangle,
-  Settings,
+  // Settings,
   Search,
   Filter,
   Trash2,
-  Edit,
+  // Edit,
   Eye,
   CheckCircle,
   XCircle,
-  BarChart3,
-  Clock,
-  AlertOctagon,
+  // BarChart3,
+  // Clock,
+  // AlertOctagon,
 } from "lucide-react";
 import { useAdminContext } from "@/contexts/AdminContext";
-
-// Mock data
-const mockUsers = [
-  {
-    id: "1",
-    name: "John Doe",
-    email: "john@example.com",
-    role: "donor",
-    status: "active",
-    joinedDate: "2024-03-01",
-    lastActive: "2024-03-15",
-    totalContributions: 5,
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    email: "jane@example.com",
-    role: "ngo",
-    status: "active",
-    joinedDate: "2024-02-15",
-    lastActive: "2024-03-14",
-    totalContributions: 8,
-  },
-];
-
-const mockAlerts = [
-  {
-    id: "1",
-    type: "warning",
-    message: "New volunteer application needs review",
-    timestamp: new Date().toISOString(),
-    resolved: false,
-  },
-  {
-    id: "2",
-    type: "critical",
-    message: "System maintenance scheduled",
-    timestamp: new Date().toISOString(),
-    resolved: false,
-  },
-];
 
 interface User {
   id: string;
@@ -68,14 +27,6 @@ interface User {
   joinedDate: string;
   lastActive: string;
   totalContributions: number;
-}
-
-interface Alert {
-  id: string;
-  type: "warning" | "critical" | "info";
-  message: string;
-  timestamp: string;
-  resolved: boolean;
 }
 
 const AdminDashboard = () => {
@@ -91,8 +42,8 @@ const AdminDashboard = () => {
   const [selectedAction, setSelectedAction] = useState<
     "suspend" | "delete" | null
   >(null);
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const [alerts, setAlerts] = useState<Alert[]>(mockAlerts);
+  const [users, setUsers] = useState<User[]>([]);
+  // const [alerts, setAlerts] = useState<Alert[]>(mockAlerts);
 
   const {
     getDashboardStats,
@@ -128,8 +79,8 @@ const AdminDashboard = () => {
     setSelectedAction(null);
   };
 
-  const handleStatusChange = (userId, status) => {
-    let data = {
+  const handleStatusChange = (userId: string, status: string) => {
+    const data = {
       userId,
       status: status == "approved" ? true : false,
     };
@@ -138,7 +89,7 @@ const AdminDashboard = () => {
   };
 
 
-  const deleteUserByAdmin=(userId)=>{
+  const deleteUserByAdmin=(userId:string)=>{
 
     deleteUser(userId);
   }
@@ -182,111 +133,113 @@ const AdminDashboard = () => {
 
   const Overview = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <DashboardCard
-          icon={Building2}
-          title="Total NGOs"
-          value={String(stats.ngoCount)}
-          trend="+5 this month"
-          trendUp={true}
-          color="blue"
-        />
-        <DashboardCard
-          icon={Users}
-          title="Active Donors"
-          value={String(stats.donorCount)}
-          trend="+12 this week"
-          trendUp={true}
-          color="green"
-        />
-        <DashboardCard
-          icon={UserCheck}
-          title="Volunteers"
-          value={String(stats.volunteerCount)}
-          trend="+3% growth"
-          trendUp={true}
-          color="purple"
-        />
-        <DashboardCard
-          icon={AlertTriangle}
-          title="Traffic"
-          value={"20"}
-          trend="2 critical"
-          trendUp={false}
-          color="red"
-        />
-      </div>
-
-      <div className="overflow-x-auto w-[90%] mx-auto  pt-10">
-        <table className="w-full">
-          <thead>
-            <tr className="text-left border-b border-gray-100">
-              <th className="pb-3 font-semibold text-gray-600">Name</th>
-              <th className="pb-3 font-semibold text-gray-600">Email</th>
-              <th className="pb-3 font-semibold text-gray-600">Status</th>
-              <th className="pb-3 font-semibold text-gray-600">Joined Date</th>
-              <th className="pb-3 font-semibold text-gray-600">Type</th>
-              <th className="pb-3 font-semibold text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {allusers.map((user) => (
-              <tr
-                key={user.id}
-                className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
-              >
-                <td className="py-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                      <span className="text-sm font-semibold text-blue-600">
-                        {user.name.charAt(0)}
-                      </span>
-                    </div>
-                    <span className="font-medium">{user.name}</span>
-                  </div>
-                </td>
-                <td className="py-4">{user.email}</td>
-                <td className="py-4">
-                  <select
-                    className={`px-2 py-1 rounded-full text-sm font-medium focus:outline-none ${
-                      user.isApproved
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                    value={user.isApproved ? "approved" : "not_approved"}
-                    onChange={(e) =>
-                      handleStatusChange(user._id, e.target.value)
-                    }
-                  >
-                    <option value="approved">Approved</option>
-                    <option value="not_approved">Not Approved</option>
-                  </select>
-                </td>
-
-                <td className="py-4">
-                  {user.createdAt &&
-                    new Date(user?.createdAt).toLocaleDateString()}
-                </td>
-
-                <td className="py-4">{user.role}</td>
-
-                <td className="py-4">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => deleteUserByAdmin(user._id)}
-                      className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-                      title="Delete user"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    {/* Dashboard Cards */}
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <DashboardCard
+        icon={Building2}
+        title="Total NGOs"
+        value={String(stats.ngoCount)}
+        trend="+5 this month"
+        trendUp={true}
+        color="blue"
+      />
+      <DashboardCard
+        icon={Users}
+        title="Active Donors"
+        value={String(stats.donorCount)}
+        trend="+12 this week"
+        trendUp={true}
+        color="green"
+      />
+      <DashboardCard
+        icon={UserCheck}
+        title="Volunteers"
+        value={String(stats.volunteerCount)}
+        trend="+3% growth"
+        trendUp={true}
+        color="purple"
+      />
+      <DashboardCard
+        icon={AlertTriangle}
+        title="Traffic"
+        value={"20"}
+        trend="2 critical"
+        trendUp={false}
+        color="red"
+      />
     </div>
+
+    {/* User Table */}
+    <div className="overflow-x-auto w-[90%] mx-auto pt-10">
+      <table className="w-full">
+        <thead>
+          <tr className="text-left border-b border-gray-100">
+            <th className="pb-3 font-semibold text-gray-600">Name</th>
+            <th className="pb-3 font-semibold text-gray-600">Email</th>
+            <th className="pb-3 font-semibold text-gray-600">Status</th>
+            <th className="pb-3 font-semibold text-gray-600">Joined Date</th>
+            <th className="pb-3 font-semibold text-gray-600">Type</th>
+            <th className="pb-3 font-semibold text-gray-600">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {allusers.map((user) => (
+            <tr
+              key={user.id}
+              className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+            >
+              <td className="py-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                    <span className="text-sm font-semibold text-blue-600">
+                      {user.name.charAt(0)}
+                    </span>
+                  </div>
+                  <span className="font-medium">{user.name}</span>
+                </div>
+              </td>
+              <td className="py-4">{user.email}</td>
+              <td className="py-4">
+                <select
+                  className={`px-2 py-1 rounded-full text-sm font-medium focus:outline-none transition-colors ease-in-out duration-300 ${
+                    user.isApproved
+                      ? "bg-green-100 text-green-700 hover:bg-green-200"
+                      : "bg-red-100 text-red-700 hover:bg-red-200"
+                  }`}
+                  value={user.isApproved ? "approved" : "not_approved"}
+                  onChange={(e) =>
+                    handleStatusChange(user._id, e.target.value)
+                  }
+                >
+                  <option value="approved">Approved</option>
+                  <option value="not_approved">Not Approved</option>
+                </select>
+              </td>
+
+              <td className="py-4">
+                {user.createdAt &&
+                  new Date(user?.createdAt).toLocaleDateString()}
+              </td>
+
+              <td className="py-4">{user.role}</td>
+
+              <td className="py-4">
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => deleteUserByAdmin(user._id)}
+                    className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors ease-in-out duration-300"
+                    title="Delete user"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
   );
 
   const UsersList = () => {
@@ -327,6 +280,7 @@ const AdminDashboard = () => {
                 <div className="relative">
                   <select
                     value={statusFilter}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     onChange={(e) => setStatusFilter(e.target.value as any)}
                     className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
                   >
@@ -595,21 +549,6 @@ const AdminDashboard = () => {
             onClick={() => setActiveTab("overview")}
           />
           <TabButton
-            label="NGOs"
-            isActive={activeTab === "ngos"}
-            onClick={() => setActiveTab("ngos")}
-          />
-          <TabButton
-            label="Donors"
-            isActive={activeTab === "donors"}
-            onClick={() => setActiveTab("donors")}
-          />
-          <TabButton
-            label="Volunteers"
-            isActive={activeTab === "volunteers"}
-            onClick={() => setActiveTab("volunteers")}
-          />
-          <TabButton
             label="Settings"
             isActive={activeTab === "settings"}
             onClick={() => setActiveTab("settings")}
@@ -634,6 +573,7 @@ const DashboardCard = ({
   trendUp,
   color,
 }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: any;
   title: string;
   value: string;
@@ -669,31 +609,6 @@ const DashboardCard = ({
     </div>
   );
 };
-
-const StatsCard = ({
-  icon: Icon,
-  title,
-  stats,
-}: {
-  icon: any;
-  title: string;
-  stats: { label: string; value: string }[];
-}) => (
-  <div className="bg-white rounded-xl shadow-sm p-6">
-    <div className="flex items-center space-x-3 mb-6">
-      <Icon className="w-5 h-5 text-blue-600" />
-      <h3 className="text-lg font-semibold">{title}</h3>
-    </div>
-    <div className="space-y-4">
-      {stats.map((stat, index) => (
-        <div key={index} className="flex justify-between items-center">
-          <span className="text-gray-600">{stat.label}</span>
-          <span className="font-semibold">{stat.value}</span>
-        </div>
-      ))}
-    </div>
-  </div>
-);
 
 const TabButton = ({
   label,
