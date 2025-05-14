@@ -7,10 +7,15 @@ const upload = multer({ storage: multer.memoryStorage() })
 
 const router = express.Router()
 
-router.post("/donate", authMiddleware(["donor"]), donorController.createDonation);
+router.post(
+  "/donate",
+  authMiddleware(["donor"]),
+  upload.single("img"), // 👈 this parses multipart form and populates req.file
+  donorController.createDonation
+);
 router.get("/stats", authMiddleware(["donor"]), donorController.getDonorStats);
 router.get("/my-donations", authMiddleware(["donor"]), donorController.getMyDonations);
 router.delete("/donate/:id", authMiddleware(["donor"]), donorController.deleteDonation);
-router.put("/donate/:id/status", authMiddleware(["donor"]), donorController.updateDonationStatus)
+router.put("/donation/:id/status", authMiddleware(["donor"]), donorController.updateDonationStatus);
 
 export default router
