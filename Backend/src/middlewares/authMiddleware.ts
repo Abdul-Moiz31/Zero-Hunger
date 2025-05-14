@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import User from "../models/User";
+import jwt from "jsonwebtoken";
 
 dotenv.config();
 
@@ -27,8 +28,12 @@ export const authMiddleware = (roles: string[] = []) => {
     }
 
     try {
-      // No decoding or user lookup, just proceed to the next middleware
-      req.user = {};  // You can replace this with actual user logic if needed
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      req.user = decoded;
+      // req.user = {}; 
+       if (roles.length && !roles.includes((decoded as any).role)) {
+        return res.status(403).json({ message: "Forbidden: Access denied" });
+      }
 
       next();  // Proceed to next middleware or controller
     } catch (error) {

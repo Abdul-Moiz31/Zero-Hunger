@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useDonorContext } from "@/contexts/donorContext";
 import {
   Package2,
@@ -9,10 +9,11 @@ import {
   X,
   Calendar,
   Clock3,
-  Trash2, 
-  XCircle
+  Trash2,
+  XCircle,
 } from "lucide-react";
 import axios from "axios";
+import axiosInstance from "@/utils/axios";
 
 interface FoodListing {
   id: string;
@@ -28,25 +29,275 @@ interface FoodListing {
   dietary_info?: string;
 }
 
+// Define form data interface
+interface FormData {
+  title: string;
+  description: string;
+  quantity: string;
+  quantity_unit: string;
+  expiry_time: string;
+  pickup_window_start: string;
+  pickup_window_end: string;
+  temperature_requirements: string;
+  dietary_info: string;
+  img?: File | null;
+}
+
+type DonationFields = {
+  title: string;
+  description: string;
+  quantity: string;
+  quantity_unit: string;
+  expiry_time: string;
+  pickup_window_start: string;
+  pickup_window_end: string;
+  temperature_requirements: string;
+  dietary_info: string;
+  img?: File | null;
+};
+
+const DonationForm = ({
+  onClose,
+  onSubmit,
+  initialFormData,
+}: {
+  onClose: () => void;
+  onSubmit: (e: React.FormEvent, formData: FormData) => Promise<void>;
+  initialFormData: DonationFields;
+}) => {
+  const [formData, setFormData] = useState<DonationFields>(initialFormData);
+
+  const handleFormChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFormData((prev) => ({
+        ...prev,
+        img: e.target.files![0],
+      }));
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const data = new FormData();
+    data.append("title", formData.title);
+    data.append("description", formData.description);
+    data.append("quantity", formData.quantity);
+    data.append("unit", formData.quantity_unit);
+    data.append("expiry_time", formData.expiry_time);
+    data.append("pickup_window_start", formData.pickup_window_start);
+    data.append("pickup_window_end", formData.pickup_window_end);
+    data.append("temperature_requirements", formData.temperature_requirements);
+    data.append("dietary_info", formData.dietary_info);
+
+    if (formData.img) {
+      data.append("img", formData.img);
+    }
+
+    onSubmit(e, data);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+      <div className="bg-white rounded-xl p-6 sm:p-8 w-full max-w-2xl animate-scaleIn overflow-y-auto max-h-[90vh]">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <h3 className="text-lg sm:text-xl font-semibold">
+            Create New Donation
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            {/* All fields remain the same */}
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Title
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleFormChange}
+                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                required
+              />
+            </div>
+
+            {/* Quantity & Unit */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Quantity
+              </label>
+              <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
+                <input
+                  type="number"
+                  name="quantity"
+                  value={formData.quantity}
+                  onChange={handleFormChange}
+                  className="flex-1 p-2.5 border border-gray-300 rounded-lg text-sm"
+                  required
+                />
+                <select
+                  name="quantity_unit"
+                  value={formData.quantity_unit}
+                  onChange={handleFormChange}
+                  className="sm:w-32 w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="meals">Meals</option>
+                  <option value="kg">Kilograms</option>
+                  <option value="boxes">Boxes</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleFormChange}
+                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                rows={3}
+                required
+              />
+            </div>
+
+            {/* Date Fields */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Expiry Time
+              </label>
+              <input
+                type="datetime-local"
+                name="expiry_time"
+                value={formData.expiry_time}
+                onChange={handleFormChange}
+                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Temperature Requirements
+              </label>
+              <input
+                type="text"
+                name="temperature_requirements"
+                value={formData.temperature_requirements}
+                onChange={handleFormChange}
+                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Pickup Window Start
+              </label>
+              <input
+                type="datetime-local"
+                name="pickup_window_start"
+                value={formData.pickup_window_start}
+                onChange={handleFormChange}
+                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Pickup Window End
+              </label>
+              <input
+                type="datetime-local"
+                name="pickup_window_end"
+                value={formData.pickup_window_end}
+                onChange={handleFormChange}
+                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                required
+              />
+            </div>
+
+            {/* Dietary Info */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Dietary Information
+              </label>
+              <input
+                type="text"
+                name="dietary_info"
+                value={formData.dietary_info}
+                onChange={handleFormChange}
+                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+              />
+            </div>
+          </div>
+
+          {/* File Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Upload Image
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+            />
+          </div>
+
+          {/* Buttons */}
+          <div className="flex flex-col sm:flex-row sm:justify-end sm:space-x-4 space-y-3 sm:space-y-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full sm:w-auto px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+            >
+              Create Donation
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const DonorDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [showDonationForm, setShowDonationForm] = useState(false);
   // const [donations, setDonations] = useState<FoodListing[]>([]);
-  const statusOptions = ["available", "assigned", "completed", "cancelled"];
+  const statusOptions = ["available", "assigned", "completed"];
   const [isLoading, setIsLoading] = useState(false);
 
-  const [formData, setFormData] = useState<{
-    title: string;
-    description: string;
-    quantity: string;
-    quantity_unit: string;
-    expiry_time: string;
-    pickup_window_start: string;
-    pickup_window_end: string;
-    temperature_requirements: string;
-    dietary_info: string;
-    img: File | null;
-  }>({
+  const initialFormData: FormData = {
     title: "",
     description: "",
     quantity: "",
@@ -57,7 +308,7 @@ const DonorDashboard = () => {
     temperature_requirements: "",
     dietary_info: "",
     img: null,
-  });
+  };
 
   const {
     stats,
@@ -68,263 +319,241 @@ const DonorDashboard = () => {
     updateDonationStatus,
   } = useDonorContext();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent, formData: FormData) => {
+      e.preventDefault();
 
-    try {
-const formPayload = new FormData();
-formPayload.append('title', formData.title);
-formPayload.append('description', formData.description);
-formPayload.append('quantity', formData.quantity);
-formPayload.append('unit', formData.quantity_unit);
-formPayload.append('expiry_time', formData.expiry_time);
-formPayload.append('pickup_window_start', formData.pickup_window_start);
-formPayload.append('pickup_window_end', formData.pickup_window_end);
-formPayload.append('temperature_requirements', formData.temperature_requirements);
-formPayload.append('dietary_info', formData.dietary_info);
-if (formData.img) {
-  formPayload.append('image', formData.img);
-}
+      try {
+        try {
+          const token = localStorage.getItem("token");
 
-try {
-  const response = await axios.post(
-    `${import.meta.env.VITE_API_BASE_URL}/donor/donate`,
-    formPayload,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      withCredentials: true,
-    }
+          const response = await axios.post(
+            `${import.meta.env.VITE_API_BASE_URL}/donor/donate`,
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+                Authorization: `Bearer ${token}`,
+              },
+              withCredentials: true,
+            }
+          );
+          console.log("Donation created successfully", response.data);
+        } catch (error) {
+          console.error("Error uploading donation:", error);
+        }
+
+        // Refresh donations list after successful submission
+        getMyDonations();
+        setShowDonationForm(false);
+      } catch (err) {
+        console.error("Error uploading donation:", err);
+        alert("Failed to create donation. Please try again.");
+      }
+    },
+    [getMyDonations]
   );
-  console.log('Donation created successfully', response.data);
-} catch (error) {
-  console.error('Error uploading donation:', error);
-}
-
-      // Refresh donations list after successful submission
-      getMyDonations();
-      setShowDonationForm(false);
-
-      // Reset form data
-      setFormData({
-        title: "",
-        description: "",
-        quantity: "",
-        quantity_unit: "meals",
-        expiry_time: "",
-        pickup_window_start: "",
-        pickup_window_end: "",
-        temperature_requirements: "",
-        dietary_info: "",
-        img: null,
-      });
-    } catch (err) {
-      console.error("Error uploading donation:", err);
-      alert("Failed to create donation. Please try again.");
-    }
-  };
 
   useEffect(() => {
     getDonorStats();
     getMyDonations();
   }, []);
 
-  const DonationForm = () => (
-    
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-  <div className="bg-white rounded-xl p-6 sm:p-8 w-full max-w-2xl animate-scaleIn overflow-y-auto max-h-[90vh]">
-    <div className="flex justify-between items-center mb-4 sm:mb-6">
-      <h3 className="text-lg sm:text-xl font-semibold">Create New Donation</h3>
-      <button
-        onClick={() => setShowDonationForm(false)}
-        className="text-gray-500 hover:text-gray-700 transition-colors"
-      >
-        <X className="w-5 h-5 sm:w-6 sm:h-6" />
-      </button>
-    </div>
+  // const DonationForm = () => (
+  //   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+  //     <div className="bg-white rounded-xl p-6 sm:p-8 w-full max-w-2xl animate-scaleIn overflow-y-auto max-h-[90vh]">
+  //       <div className="flex justify-between items-center mb-4 sm:mb-6">
+  //         <h3 className="text-lg sm:text-xl font-semibold">
+  //           Create New Donation
+  //         </h3>
+  //         <button
+  //           onClick={() => setShowDonationForm(false)}
+  //           className="text-gray-500 hover:text-gray-700 transition-colors"
+  //         >
+  //           <X className="w-5 h-5 sm:w-6 sm:h-6" />
+  //         </button>
+  //       </div>
 
-    <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Title
-          </label>
-          <input
-            type="text"
-            value={formData.title}
-            onChange={(e) =>
-              setFormData({ ...formData, title: e.target.value })
-            }
-            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-            required
-          />
-        </div>
+  //       <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+  //         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+  //           <div>
+  //             <label className="block text-sm font-medium text-gray-700 mb-1">
+  //               Title
+  //             </label>
+  //             <input
+  //               type="text"
+  //               value={formData.title}
+  //               onChange={(e) =>
+  //                 setFormData({ ...formData, title: e.target.value })
+  //               }
+  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+  //               required
+  //             />
+  //           </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Quantity
-          </label>
-          <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
-            <input
-              type="number"
-              value={formData.quantity}
-              onChange={(e) =>
-                setFormData({ ...formData, quantity: e.target.value })
-              }
-              className="flex-1 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-              required
-            />
-            <select
-              value={formData.quantity_unit}
-              onChange={(e) =>
-                setFormData({ ...formData, quantity_unit: e.target.value })
-              }
-              className="sm:w-32 w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-            >
-              <option value="meals">Meals</option>
-              <option value="kg">Kilograms</option>
-              <option value="boxes">Boxes</option>
-            </select>
-          </div>
-        </div>
+  //           <div>
+  //             <label className="block text-sm font-medium text-gray-700 mb-1">
+  //               Quantity
+  //             </label>
+  //             <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
+  //               <input
+  //                 type="number"
+  //                 value={formData.quantity}
+  //                 onChange={(e) =>
+  //                   setFormData({ ...formData, quantity: e.target.value })
+  //                 }
+  //                 className="flex-1 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+  //                 required
+  //               />
+  //               <select
+  //                 value={formData.quantity_unit}
+  //                 onChange={(e) =>
+  //                   setFormData({ ...formData, quantity_unit: e.target.value })
+  //                 }
+  //                 className="sm:w-32 w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+  //               >
+  //                 <option value="meals">Meals</option>
+  //                 <option value="kg">Kilograms</option>
+  //                 <option value="boxes">Boxes</option>
+  //               </select>
+  //             </div>
+  //           </div>
 
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
-          </label>
-          <textarea
-            value={formData.description}
-            onChange={(e) =>
-              setFormData({ ...formData, description: e.target.value })
-            }
-            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-            rows={3}
-            required
-          />
-        </div>
+  //           <div className="md:col-span-2">
+  //             <label className="block text-sm font-medium text-gray-700 mb-1">
+  //               Description
+  //             </label>
+  //             <textarea
+  //               value={formData.description}
+  //               onChange={(e) =>
+  //                 setFormData({ ...formData, description: e.target.value })
+  //               }
+  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+  //               rows={3}
+  //               required
+  //             />
+  //           </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Expiry Time
-          </label>
-          <input
-            type="datetime-local"
-            value={formData.expiry_time}
-            onChange={(e) =>
-              setFormData({ ...formData, expiry_time: e.target.value })
-            }
-            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-            required
-          />
-        </div>
+  //           <div>
+  //             <label className="block text-sm font-medium text-gray-700 mb-1">
+  //               Expiry Time
+  //             </label>
+  //             <input
+  //               type="datetime-local"
+  //               value={formData.expiry_time}
+  //               onChange={(e) =>
+  //                 setFormData({ ...formData, expiry_time: e.target.value })
+  //               }
+  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+  //               required
+  //             />
+  //           </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Temperature Requirements
-          </label>
-          <input
-            type="text"
-            value={formData.temperature_requirements}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                temperature_requirements: e.target.value,
-              })
-            }
-            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-            placeholder="e.g., Refrigerated, Room temperature"
-          />
-        </div>
+  //           <div>
+  //             <label className="block text-sm font-medium text-gray-700 mb-1">
+  //               Temperature Requirements
+  //             </label>
+  //             <input
+  //               type="text"
+  //               value={formData.temperature_requirements}
+  //               onChange={(e) =>
+  //                 setFormData({
+  //                   ...formData,
+  //                   temperature_requirements: e.target.value,
+  //                 })
+  //               }
+  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+  //               placeholder="e.g., Refrigerated, Room temperature"
+  //             />
+  //           </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Pickup Window Start
-          </label>
-          <input
-            type="datetime-local"
-            value={formData.pickup_window_start}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                pickup_window_start: e.target.value,
-              })
-            }
-            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-            required
-          />
-        </div>
+  //           <div>
+  //             <label className="block text-sm font-medium text-gray-700 mb-1">
+  //               Pickup Window Start
+  //             </label>
+  //             <input
+  //               type="datetime-local"
+  //               value={formData.pickup_window_start}
+  //               onChange={(e) =>
+  //                 setFormData({
+  //                   ...formData,
+  //                   pickup_window_start: e.target.value,
+  //                 })
+  //               }
+  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+  //               required
+  //             />
+  //           </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Pickup Window End
-          </label>
-          <input
-            type="datetime-local"
-            value={formData.pickup_window_end}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                pickup_window_end: e.target.value,
-              })
-            }
-            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-            required
-          />
-        </div>
+  //           <div>
+  //             <label className="block text-sm font-medium text-gray-700 mb-1">
+  //               Pickup Window End
+  //             </label>
+  //             <input
+  //               type="datetime-local"
+  //               value={formData.pickup_window_end}
+  //               onChange={(e) =>
+  //                 setFormData({
+  //                   ...formData,
+  //                   pickup_window_end: e.target.value,
+  //                 })
+  //               }
+  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+  //               required
+  //             />
+  //           </div>
 
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Dietary Information
-          </label>
-          <input
-            type="text"
-            value={formData.dietary_info}
-            onChange={(e) =>
-              setFormData({ ...formData, dietary_info: e.target.value })
-            }
-            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-            placeholder="e.g., Vegetarian, Contains nuts"
-          />
-        </div>
-      </div>
+  //           <div className="md:col-span-2">
+  //             <label className="block text-sm font-medium text-gray-700 mb-1">
+  //               Dietary Information
+  //             </label>
+  //             <input
+  //               type="text"
+  //               value={formData.dietary_info}
+  //               onChange={(e) =>
+  //                 setFormData({ ...formData, dietary_info: e.target.value })
+  //               }
+  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+  //               placeholder="e.g., Vegetarian, Contains nuts"
+  //             />
+  //           </div>
+  //         </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Upload Image
-        </label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            if (e.target.files && e.target.files[0]) {
-              setFormData({ ...formData, img: e.target.files[0] });
-            }
-          }}
-          className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
-        />
-      </div>
+  //         <div>
+  //           <label className="block text-sm font-medium text-gray-700 mb-1">
+  //             Upload Image
+  //           </label>
+  //           <input
+  //             type="file"
+  //             accept="image/*"
+  //             onChange={(e) => {
+  //               if (e.target.files && e.target.files[0]) {
+  //                 setFormData({ ...formData, img: e.target.files[0] });
+  //               }
+  //             }}
+  //             className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+  //           />
+  //         </div>
 
-      <div className="flex flex-col sm:flex-row sm:justify-end sm:space-x-4 space-y-3 sm:space-y-0">
-        <button
-          type="button"
-          onClick={() => setShowDonationForm(false)}
-          className="w-full sm:w-auto px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-        >
-          Create Donation
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
-  );
+  //         <div className="flex flex-col sm:flex-row sm:justify-end sm:space-x-4 space-y-3 sm:space-y-0">
+  //           <button
+  //             type="button"
+  //             onClick={() => setShowDonationForm(false)}
+  //             className="w-full sm:w-auto px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm"
+  //           >
+  //             Cancel
+  //           </button>
+  //           <button
+  //             type="submit"
+  //             className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+  //           >
+  //             Create Donation
+  //           </button>
+  //         </div>
+  //       </form>
+  //     </div>
+  //   </div>
+  // );
 
   const Overview = () => (
     <>
@@ -360,7 +589,7 @@ try {
           trendUp={true}
         />
       </div>
-  
+
       <div className="w-full mb-8">
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">
@@ -423,16 +652,15 @@ try {
       </div>
     </>
   );
-  
 
-  const DonationsList = () => {
+  const DonationsList = useCallback(() => {
     const [editingStatusId, setEditingStatusId] = useState(null);
-  
-    const handleStatusChange = (id: string, newStatus: string) => {
-      updateDonationStatus(id, newStatus);
+
+    const handleStatusChange = async (id, newStatus) => {
+      await updateDonationStatus(id, newStatus);
       setEditingStatusId(null);
     };
-  
+
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
@@ -445,7 +673,7 @@ try {
             <span>New Donation</span>
           </button>
         </div>
-  
+
         <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full bg-white text-sm text-gray-700">
             <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
@@ -466,7 +694,8 @@ try {
                 >
                   <td className="px-4 py-3">{donation.title}</td>
                   <td className="px-4 py-3">
-                    {donation.quantity} {donation.unit || "items"}
+                    {donation.quantity}{" "}
+                    {donation.unit || donation.quantity_unit || "items"}
                   </td>
                   <td className="px-4 py-3">
                     {donation.pickupWindow
@@ -513,13 +742,6 @@ try {
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
-                    {/* <button
-                      onClick={() => editDonation(donation)}
-                      className="text-blue-600 hover:text-blue-800 transition"
-                      title="Edit"
-                    >
-                      <Pencil className="w-5 h-5" />
-                    </button> */}
                   </td>
                 </tr>
               ))}
@@ -528,8 +750,7 @@ try {
         </div>
       </div>
     );
-  };
-  
+  }, [donations, deleteDonation, updateDonationStatus, statusOptions]);
 
   if (isLoading) {
     return (
@@ -568,7 +789,14 @@ try {
       </div>
 
       {activeTab === "overview" ? <Overview /> : <DonationsList />}
-      {showDonationForm && <DonationForm />}
+      {/* Render form conditionally */}
+      {showDonationForm && (
+        <DonationForm
+          onClose={() => setShowDonationForm(false)}
+          onSubmit={handleSubmit}
+          initialFormData={initialFormData}
+        />
+      )}
     </div>
   );
 };
