@@ -4,6 +4,7 @@ import cors from "cors";
 import connectDB from "./config/db";
 
 import authRoutes from "./routes/authRoutes";
+import contactRoutes from "./routes/contactRoutes";
 import foodRoutes from "./routes/foodRoutes";
 import donorRoutes from "./routes/donorRoutes";
 import cookieParser from "cookie-parser";
@@ -33,6 +34,7 @@ app.use(express.urlencoded({ extended: true })); // for parsing application/x-ww
 
 app.use(cookieParser());
 app.use("/api/auth", authRoutes);
+app.use('/api/contact', contactRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ngo", ngoRoutes);
 app.use("/api/donor", donorRoutes);

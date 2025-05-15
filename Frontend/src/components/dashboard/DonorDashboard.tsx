@@ -13,7 +13,6 @@ import {
   XCircle,
 } from "lucide-react";
 import axios from "axios";
-import axiosInstance from "@/utils/axios";
 
 interface FoodListing {
   id: string;

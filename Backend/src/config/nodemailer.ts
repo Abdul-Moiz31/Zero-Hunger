@@ -15,4 +15,10 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Verify transporter configuration
+transporter.verify((error, success) => {
+  if (error) console.error('Nodemailer configuration error:', error);
+  else console.log('Nodemailer ready:', success);
+});
+
 export default transporter;
