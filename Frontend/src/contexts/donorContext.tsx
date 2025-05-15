@@ -92,7 +92,7 @@ export function DonorProvider({ children }: { children: React.ReactNode }) {
   async function deleteDonation(id: string) {
     try {
       await axios.delete(
-        `${import.meta.env.VITE_API_BASE_URL}/donor/donation/${id}`,
+        `${import.meta.env.VITE_API_BASE_URL}/donor/donate/${id}`,
         getAuthHeaders()
       )
       getMyDonations()

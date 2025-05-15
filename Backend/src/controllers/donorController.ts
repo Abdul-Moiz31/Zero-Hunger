@@ -84,7 +84,7 @@ export const getMyDonations = async (req: Request, res: Response) => {
 export const deleteDonation = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const donation = await Food.findOne({ _id: id, donorId: req.user._id })
+    const donation = await Food.findOne({ _id: id, donorId: req.user.id })
 
     if (!donation) {
       return res.status(404).json({ message: "Donation not found or unauthorized" })
@@ -107,7 +107,7 @@ export const updateDonationStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid status" })
     }
 
-    const donation = await Food.findOne({ _id: id, donorId: req.user._id })
+    const donation = await Food.findOne({ _id: id, donorId: req.user.id })
 
     if (!donation) {
       return res.status(404).json({ message: "Donation not found or unauthorized" })

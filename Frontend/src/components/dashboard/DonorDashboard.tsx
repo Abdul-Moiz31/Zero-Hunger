@@ -10,9 +10,9 @@ import {
   Calendar,
   Clock3,
   Trash2,
-  XCircle,
 } from "lucide-react";
 import axios from "axios";
+import toast, { Toaster } from "react-hot-toast";
 
 interface FoodListing {
   id: string;
@@ -68,6 +68,37 @@ const DonationForm = ({
   initialFormData: DonationFields;
 }) => {
   const [formData, setFormData] = useState<DonationFields>(initialFormData);
+  const [formErrors, setFormErrors] = useState<Partial<FormData>>({});
+  const validateForm = () => {
+    const errors: Partial<FormData> = {};
+    const now = new Date();
+    const expiry = new Date(formData.expiry_time);
+    const pickupStart = new Date(formData.pickup_window_start);
+    const pickupEnd = new Date(formData.pickup_window_end);
+
+    if (!formData.title.trim()) errors.title = "Title is required";
+    if (!formData.description.trim())
+      errors.description = "Description is required";
+    if (!formData.quantity || Number(formData.quantity) <= 0)
+      errors.quantity = "Quantity must be a positive number";
+    if (!formData.quantity_unit) errors.quantity_unit = "Unit is required";
+    if (!formData.expiry_time) errors.expiry_time = "Expiry time is required";
+    else if (expiry <= now)
+      errors.expiry_time = "Expiry time must be in the future";
+    if (!formData.pickup_window_start)
+      errors.pickup_window_start = "Pickup start time is required";
+    else if (pickupStart <= now)
+      errors.pickup_window_start = "Pickup start time must be in the future";
+    if (!formData.pickup_window_end)
+      errors.pickup_window_end = "Pickup end time is required";
+    else if (pickupEnd <= pickupStart)
+      errors.pickup_window_end = "Pickup end time must be after start time";
+    if (!formData.pickup_location.trim())
+      errors.pickup_location = "Pickup location is required";
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleFormChange = (
     e: React.ChangeEvent<
@@ -92,6 +123,7 @@ const DonationForm = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
 
     const data = new FormData();
     data.append("title", formData.title);
@@ -103,16 +135,17 @@ const DonationForm = ({
     data.append("pickup_window_end", formData.pickup_window_end);
     data.append("temperature_requirements", formData.temperature_requirements);
     data.append("dietary_info", formData.dietary_info);
-    data.append("pickup_location", formData.pickup_location);
+    data.append("pickup_location", formData.pickup_location); 
 
     if (formData.img) {
       data.append("img", formData.img);
     }
 
     onSubmit(e, data);
+    setFormData(initialFormData);
   };
 
-  return (
+ return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
       <div className="bg-white rounded-xl p-6 sm:p-8 w-full max-w-2xl animate-scaleIn overflow-y-auto max-h-[90vh]">
         <div className="flex justify-between items-center mb-4 sm:mb-6">
@@ -129,7 +162,6 @@ const DonationForm = ({
 
         <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            {/* All fields remain the same */}
             {/* Title */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -140,9 +172,14 @@ const DonationForm = ({
                 name="title"
                 value={formData.title}
                 onChange={handleFormChange}
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                className={`w-full p-2.5 border ${
+                  formErrors.title ? "border-red-500" : "border-gray-300"
+                } rounded-lg text-sm`}
                 required
               />
+              {formErrors.title && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.title}</p>
+              )}
             </div>
 
             {/* Quantity & Unit */}
@@ -156,20 +193,31 @@ const DonationForm = ({
                   name="quantity"
                   value={formData.quantity}
                   onChange={handleFormChange}
-                  className="flex-1 p-2.5 border border-gray-300 rounded-lg text-sm"
+                  className={`flex-1 p-2.5 border ${
+                    formErrors.quantity ? "border-red-500" : "border-gray-300"
+                  } rounded-lg text-sm`}
                   required
+                  min="1"
                 />
                 <select
                   name="quantity_unit"
                   value={formData.quantity_unit}
                   onChange={handleFormChange}
-                  className="sm:w-32 w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                  className={`sm:w-32 w-full p-2.5 border ${
+                    formErrors.quantity_unit ? "border-red-500" : "border-gray-300"
+                  } rounded-lg text-sm`}
                 >
                   <option value="meals">Meals</option>
                   <option value="kg">Kilograms</option>
                   <option value="boxes">Boxes</option>
                 </select>
               </div>
+              {formErrors.quantity && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.quantity}</p>
+              )}
+              {formErrors.quantity_unit && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.quantity_unit}</p>
+              )}
             </div>
 
             {/* Description */}
@@ -181,10 +229,15 @@ const DonationForm = ({
                 name="description"
                 value={formData.description}
                 onChange={handleFormChange}
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                className={`w-full p-2.5 border ${
+                  formErrors.description ? "border-red-500" : "border-gray-300"
+                } rounded-lg text-sm`}
                 rows={3}
                 required
               />
+              {formErrors.description && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.description}</p>
+              )}
             </div>
 
             {/* Date Fields */}
@@ -197,9 +250,15 @@ const DonationForm = ({
                 name="expiry_time"
                 value={formData.expiry_time}
                 onChange={handleFormChange}
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                className={`w-full p-2.5 border ${
+                  formErrors.expiry_time ? "border-red-500" : "border-gray-300"
+                } rounded-lg text-sm`}
                 required
+                min={new Date().toISOString().slice(0, 16)}
               />
+              {formErrors.expiry_time && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.expiry_time}</p>
+              )}
             </div>
 
             <div>
@@ -224,9 +283,15 @@ const DonationForm = ({
                 name="pickup_window_start"
                 value={formData.pickup_window_start}
                 onChange={handleFormChange}
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                className={`w-full p-2.5 border ${
+                  formErrors.pickup_window_start ? "border-red-500" : "border-gray-300"
+                } rounded-lg text-sm`}
                 required
+                min={new Date().toISOString().slice(0, 16)}
               />
+              {formErrors.pickup_window_start && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.pickup_window_start}</p>
+              )}
             </div>
 
             <div>
@@ -238,9 +303,15 @@ const DonationForm = ({
                 name="pickup_window_end"
                 value={formData.pickup_window_end}
                 onChange={handleFormChange}
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                className={`w-full p-2.5 border ${
+                  formErrors.pickup_window_end ? "border-red-500" : "border-gray-300"
+                } rounded-lg text-sm`}
                 required
+                min={formData.pickup_window_start || new Date().toISOString().slice(0, 16)}
               />
+              {formErrors.pickup_window_end && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.pickup_window_end}</p>
+              )}
             </div>
 
             {/* Dietary Info */}
@@ -256,33 +327,39 @@ const DonationForm = ({
                 className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
               />
             </div>
-          </div>
-          {/* Location Info */}
+
+            {/* Pickup Location */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-               Pickup Location
+                Pickup Location
               </label>
               <input
                 type="text"
                 name="pickup_location"
                 value={formData.pickup_location}
                 onChange={handleFormChange}
+                className={`w-full p-2.5 border ${
+                  formErrors.pickup_location ? "border-red-500" : "border-gray-300"
+                } rounded-lg text-sm`}
+                required
+              />
+              {formErrors.pickup_location && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.pickup_location}</p>
+              )}
+            </div>
+
+            {/* File Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Upload Image
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
                 className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
               />
             </div>
-
-
-          {/* File Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Upload Image
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
-            />
           </div>
 
           {/* Buttons */}
@@ -325,7 +402,7 @@ const DonorDashboard = () => {
     temperature_requirements: "",
     dietary_info: "",
     img: null,
-    pickup_location:""
+    pickup_location: "",
   };
 
   const {
@@ -340,33 +417,52 @@ const DonorDashboard = () => {
   const handleSubmit = useCallback(
     async (e: React.FormEvent, formData: FormData) => {
       e.preventDefault();
-
       try {
-        try {
-          const token = localStorage.getItem("token");
-
-          const response = await axios.post(
-            `${import.meta.env.VITE_API_BASE_URL}/donor/donate`,
-            formData,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-                Authorization: `Bearer ${token}`,
-              },
-              withCredentials: true,
-            }
-          );
-          console.log("Donation created successfully", response.data);
-        } catch (error) {
-          console.error("Error uploading donation:", error);
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("Authentication token not found");
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/donor/donate`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${token}`,
+            },
+            withCredentials: true,
+          }
+        );
+        if (response.status === 201 || response.status === 200) {
+          await getMyDonations();
+          setShowDonationForm(false);
+          toast.success("Donation created successfully!", {
+            duration: 3000,
+            position: "top-right",
+            style: {
+              background: "#16a34a",
+              color: "#ffffff",
+              padding: "12px 24px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+            },
+          });
         }
-
-        // Refresh donations list after successful submission
-        getMyDonations();
-        setShowDonationForm(false);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error uploading donation:", err);
-        alert("Failed to create donation. Please try again.");
+        const errorMessage =
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to create donation. Please try again.";
+        toast.error(errorMessage, {
+          duration: 3000,
+          position: "top-right",
+          style: {
+            background: "#dc2626",
+            color: "#ffffff",
+            padding: "12px 24px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+          },
+        });
       }
     },
     [getMyDonations]
@@ -383,30 +479,21 @@ const DonorDashboard = () => {
         <DashboardCard
           icon={Package2}
           title="Total Donations"
-          stats={[
-            { label: "Total Donations", value: String(stats.totalDonations) },
-          ]}
+          stats={[{ label: "Total Donations", value: String(stats.totalDonations || 0) }]}
           trend="+3 this week"
           trendUp={true}
         />
         <DashboardCard
           icon={Clock}
           title="Pending Pickups"
-          stats={[
-            { label: "Pending Pickups", value: String(stats.pendingDonations) },
-          ]}
+          stats={[{ label: "Pending Pickups", value: String(stats.pendingDonations || 0) }]}
           trend="2 expiring soon"
           trendUp={false}
         />
         <DashboardCard
           icon={CheckCircle}
           title="Completed"
-          stats={[
-            {
-              label: "Completed Donations",
-              value: String(stats.completedDonations),
-            },
-          ]}
+          stats={[{ label: "Completed Donations", value: String(stats.completedDonations || 0) }]}
           trend="+12% this month"
           trendUp={true}
         />
@@ -418,9 +505,9 @@ const DonorDashboard = () => {
             Recent Donations
           </h2>
           <div className="space-y-5">
-            {donations.slice(0, 5).map((donation) => (
+            {donations.slice(0, 10).map((donation) => (
               <div
-                key={donation.id}
+                key={donation._id}
                 className="flex items-start justify-between border-b pb-4 last:border-b-0"
               >
                 <div className="flex items-start gap-4">
@@ -428,24 +515,18 @@ const DonorDashboard = () => {
                     <Package2 className="w-5 h-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-800">
-                      {donation.title}
-                    </h3>
+                    <h3 className="font-semibold text-gray-800">{donation.title}</h3>
                     <p className="text-sm text-gray-500">
                       {donation.quantity} {donation.quantity_unit || "items"}
                     </p>
                     <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
                       <span className="flex items-center">
                         <Calendar className="w-4 h-4 mr-1" />
-                        {new Date(
-                          donation.pickupWindow || donation.pickup_window_start
-                        ).toLocaleDateString()}
+                        {new Date(donation.pickup_window_start).toLocaleDateString()}
                       </span>
                       <span className="flex items-center">
                         <Clock3 className="w-4 h-4 mr-1" />
-                        {new Date(
-                          donation.pickupWindow || donation.pickup_window_start
-                        ).toLocaleTimeString([], {
+                        {new Date(donation.pickup_window_start).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
@@ -464,11 +545,13 @@ const DonorDashboard = () => {
                       : "bg-red-100 text-red-700"
                   }`}
                 >
-                  {donation.status.charAt(0).toUpperCase() +
-                    donation.status.slice(1)}
+                  {donation.status.charAt(0).toUpperCase() + donation.status.slice(1)}
                 </span>
               </div>
             ))}
+            {donations.length === 0 && (
+              <p className="text-gray-500 text-center py-4">No recent donations available.</p>
+            )}
           </div>
         </div>
       </div>
@@ -476,9 +559,9 @@ const DonorDashboard = () => {
   );
 
   const DonationsList = useCallback(() => {
-    const [editingStatusId, setEditingStatusId] = useState(null);
+    const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
 
-    const handleStatusChange = async (id, newStatus) => {
+    const handleStatusChange = async (id: string, newStatus: string) => {
       await updateDonationStatus(id, newStatus);
       setEditingStatusId(null);
     };
@@ -517,34 +600,21 @@ const DonorDashboard = () => {
                 >
                   <td className="px-4 py-3">{donation.title}</td>
                   <td className="px-4 py-3">
-                    {donation.quantity}{" "}
-                    {donation.unit || donation.quantity_unit || "items"}
+                    {donation.quantity} {donation.quantity_unit || "items"}
                   </td>
                   <td className="px-4 py-3">
-                    {donation.pickupWindow
-                      ? donation.pickupWindow
-                      : `${new Date(
-                          donation.pickup_window_start
-                        ).toLocaleString()} - ${new Date(
-                          donation.pickup_window_end
-                        ).toLocaleString()}`}
+                    {`${new Date(donation.pickup_window_start).toLocaleString()} - ${new Date(
+                      donation.pickup_window_end
+                    ).toLocaleString()}`}
                   </td>
                   <td className="px-4 py-3">
-                    {new Date(
-                      donation.expiryTime || donation.expiry_time
-                    ).toLocaleString()}
+                    {new Date(donation.expiry_time).toLocaleString()}
                   </td>
-                  <td className="px-4 py-3">
-                    {
-                      donation.pickup_location
-                  }
-                  </td>
+                  <td className="px-4 py-3">{donation.pickup_location}</td>
                   <td className="px-4 py-3">
                     <select
                       value={donation.status}
-                      onChange={(e) =>
-                        handleStatusChange(donation._id, e.target.value)
-                      }
+                      onChange={(e) => handleStatusChange(donation._id, e.target.value)}
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${
                         donation.status === "cancelled"
                           ? "bg-red-100 text-red-700"
@@ -557,7 +627,7 @@ const DonorDashboard = () => {
                     >
                       {statusOptions.map((status) => (
                         <option key={status} value={status}>
-                          {status}
+                          {status.charAt(0).toUpperCase() + status.slice(1)}
                         </option>
                       ))}
                     </select>
@@ -573,6 +643,13 @@ const DonorDashboard = () => {
                   </td>
                 </tr>
               ))}
+              {donations.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-3 text-center text-gray-500">
+                    No donations available.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -590,6 +667,7 @@ const DonorDashboard = () => {
 
   return (
     <div className="p-6">
+      <Toaster />
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Donor Dashboard</h1>
         <div className="flex space-x-4">
@@ -616,8 +694,7 @@ const DonorDashboard = () => {
         </div>
       </div>
 
-      {activeTab === "overview" ? <Overview /> : <DonationsList />}
-      {/* Render form conditionally */}
+       {activeTab === "overview" ? <Overview /> : <DonationsList />}
       {showDonationForm && (
         <DonationForm
           onClose={() => setShowDonationForm(false)}
