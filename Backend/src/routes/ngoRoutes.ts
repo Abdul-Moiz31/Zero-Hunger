@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getMyVolunteers, claimFood ,getNgoStats , getClaimedFoods } from '../controllers/ngoController';
+import { getMyVolunteers, claimFood ,getNgoStats , getClaimedFoods,assignVolunteerToFood } from '../controllers/ngoController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -10,6 +10,9 @@ router.get('/volunteers', authMiddleware(['ngo']), getMyVolunteers);
 router.post("/claim/food",authMiddleware(['ngo']),claimFood)
 router.get("/claimed/foods",authMiddleware(['ngo']),getClaimedFoods)
 router.get("/stats", authMiddleware(['ngo']), getNgoStats)
+
+// Assign a volunteer to a food item
+router.post('/assign/volunteer', authMiddleware(['ngo']), assignVolunteerToFood);
 
 
 

@@ -109,7 +109,7 @@ export const getClaimedFoods = async (req: Request, res: Response) => {
       ngoId,
       status: "assigned",
     }).populate({
-        path: "donorId",
+        path: "donorId volunteerId",
         model: User,
         select: "name email", 
       })
@@ -128,3 +128,49 @@ export const getClaimedFoods = async (req: Request, res: Response) => {
     });
   }
 };
+
+
+// Assign a volunteer to a food item
+export const assignVolunteerToFood = async (req: Request, res: Response) => {
+  const { volunteerId, foodId } = req.body;
+  const ngoId = req.user.id;
+
+  if (!volunteerId || !foodId) {
+    return res.status(400).json({ success: false, message: 'Volunteer ID and Food ID are required' });
+  }
+
+  try {
+ 
+
+    // Find the food item and update it
+    const updatedFood = await Food.findByIdAndUpdate(
+      foodId,
+      { 
+        volunteerId,
+        status: 'assigned', // Update status to 'assigned'
+        delivered_time: new Date() // Record when the food was assigned
+      },
+      { new: true, runValidators: true } // Return the updated document and validate against schema
+    );
+
+    if (!updatedFood) {
+      return res.status(404).json({ success: false, message: 'Food item not found' });
+    }
+
+    // Return the updated food item
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Volunteer assigned successfully', 
+      data: updatedFood 
+    });
+
+  } catch (error) {
+    console.error('Error assigning volunteer to food:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server error while assigning volunteer', 
+      error: error.message 
+    });
+  } 
+}
+
