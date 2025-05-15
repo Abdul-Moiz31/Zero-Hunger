@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState } from "react";
 import axios from "axios";
 
@@ -8,9 +7,28 @@ interface NGOStats {
   completedDonations: number;
 }
 
+interface Volunteer {
+  id: string;
+  name: string;
+  email: string;
+  completedDonationsCount: number;
+}
+
+interface Food {
+  _id: string;
+  name: string;
+  status: string;
+  acceptance_time: string;
+  // Add other food properties as needed
+}
+
 interface NGOContextType {
   stats: NGOStats;
-  getNGOStats: () => void;
+  volunteers: Volunteer[];
+  claimedFoods: Food[];
+  getNGOStats: () => Promise<void>;
+  getVolunteers: () => Promise<void>;
+  getClaimedFoods: () => Promise<void>;
 }
 
 const NGOContext = createContext<NGOContextType | undefined>(undefined);
@@ -28,31 +46,76 @@ export function NGOProvider({ children }: { children: React.ReactNode }) {
     total_donations: 0,
     completedDonations: 0,
   });
+  
+  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [claimedFoods, setClaimedFoods] = useState<Food[]>([]);
 
   async function getNGOStats() {
+    const token = localStorage.getItem('token');
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/ngo/stats`
+        `${import.meta.env.VITE_API_BASE_URL}/ngo/stats`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
       );
+      
       const {
-        Volunteers,
-        total_donations,
-        completedDonations,
+        totalVolunteers,
+        totalCompletedDonations,
+        totalPendingDonations,
       } = response.data;
-
+      
       setStats({
-        Volunteers,
-        total_donations,
-        completedDonations
+        Volunteers: totalVolunteers,
+        total_donations: totalCompletedDonations,
+        completedDonations: totalPendingDonations,
       });
-      setStats(response.data);
     } catch (error) {
       console.error("Failed to fetch NGO stats:", error);
     }
   }
 
+  async function getVolunteers() {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/ngo/volunteers`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+      setVolunteers(response.data);
+    } catch (error) {
+      console.error("Failed to fetch volunteers:", error);
+    }
+  }
+
+  async function getClaimedFoods() {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/ngo/claimed/foods`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+      setClaimedFoods(response.data.data);
+    } catch (error) {
+      console.error("Failed to fetch claimed foods:", error);
+    }
+  }
+
   return (
-    <NGOContext.Provider value={{ stats, getNGOStats }}>
+    <NGOContext.Provider value={{ stats, volunteers, claimedFoods, getNGOStats, getVolunteers, getClaimedFoods }}>
       {children}
     </NGOContext.Provider>
   );

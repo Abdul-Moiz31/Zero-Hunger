@@ -4,7 +4,7 @@ import food from "../models/Food"; // Assuming food model is actually task model
 // Volunteer Dashboard Stats
 export const getVolunteerStats = async (req: Request, res: Response) => {
   try {
-    const volunteerId = req.user._id; // Assuming user is authenticated
+    const volunteerId = req.user.id; // Assuming user is authenticated
 
     const available_Task = await food.countDocuments({ status: "available" }); // No volunteerId here!
     const in_progress_task = await food.countDocuments({ volunteerId: volunteerId, status: "in_progress" });

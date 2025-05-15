@@ -26,6 +26,7 @@ interface FoodListing {
   status: "available" | "assigned" | "completed" | "cancelled";
   temperature_requirements?: string;
   dietary_info?: string;
+  pickup_location?: string;
 }
 
 // Define form data interface
@@ -39,6 +40,7 @@ interface FormData {
   pickup_window_end: string;
   temperature_requirements: string;
   dietary_info: string;
+  pickup_location: string;
   img?: File | null;
 }
 
@@ -52,6 +54,7 @@ type DonationFields = {
   pickup_window_end: string;
   temperature_requirements: string;
   dietary_info: string;
+  pickup_location: string;
   img?: File | null;
 };
 
@@ -100,6 +103,7 @@ const DonationForm = ({
     data.append("pickup_window_end", formData.pickup_window_end);
     data.append("temperature_requirements", formData.temperature_requirements);
     data.append("dietary_info", formData.dietary_info);
+    data.append("pickup_location", formData.pickup_location);
 
     if (formData.img) {
       data.append("img", formData.img);
@@ -253,6 +257,20 @@ const DonationForm = ({
               />
             </div>
           </div>
+          {/* Location Info */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+               Pickup Location
+              </label>
+              <input
+                type="text"
+                name="pickup_location"
+                value={formData.pickup_location}
+                onChange={handleFormChange}
+                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+              />
+            </div>
+
 
           {/* File Upload */}
           <div>
@@ -307,6 +325,7 @@ const DonorDashboard = () => {
     temperature_requirements: "",
     dietary_info: "",
     img: null,
+    pickup_location:""
   };
 
   const {
@@ -357,202 +376,6 @@ const DonorDashboard = () => {
     getDonorStats();
     getMyDonations();
   }, []);
-
-  // const DonationForm = () => (
-  //   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-  //     <div className="bg-white rounded-xl p-6 sm:p-8 w-full max-w-2xl animate-scaleIn overflow-y-auto max-h-[90vh]">
-  //       <div className="flex justify-between items-center mb-4 sm:mb-6">
-  //         <h3 className="text-lg sm:text-xl font-semibold">
-  //           Create New Donation
-  //         </h3>
-  //         <button
-  //           onClick={() => setShowDonationForm(false)}
-  //           className="text-gray-500 hover:text-gray-700 transition-colors"
-  //         >
-  //           <X className="w-5 h-5 sm:w-6 sm:h-6" />
-  //         </button>
-  //       </div>
-
-  //       <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-  //         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-  //           <div>
-  //             <label className="block text-sm font-medium text-gray-700 mb-1">
-  //               Title
-  //             </label>
-  //             <input
-  //               type="text"
-  //               value={formData.title}
-  //               onChange={(e) =>
-  //                 setFormData({ ...formData, title: e.target.value })
-  //               }
-  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-  //               required
-  //             />
-  //           </div>
-
-  //           <div>
-  //             <label className="block text-sm font-medium text-gray-700 mb-1">
-  //               Quantity
-  //             </label>
-  //             <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
-  //               <input
-  //                 type="number"
-  //                 value={formData.quantity}
-  //                 onChange={(e) =>
-  //                   setFormData({ ...formData, quantity: e.target.value })
-  //                 }
-  //                 className="flex-1 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-  //                 required
-  //               />
-  //               <select
-  //                 value={formData.quantity_unit}
-  //                 onChange={(e) =>
-  //                   setFormData({ ...formData, quantity_unit: e.target.value })
-  //                 }
-  //                 className="sm:w-32 w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-  //               >
-  //                 <option value="meals">Meals</option>
-  //                 <option value="kg">Kilograms</option>
-  //                 <option value="boxes">Boxes</option>
-  //               </select>
-  //             </div>
-  //           </div>
-
-  //           <div className="md:col-span-2">
-  //             <label className="block text-sm font-medium text-gray-700 mb-1">
-  //               Description
-  //             </label>
-  //             <textarea
-  //               value={formData.description}
-  //               onChange={(e) =>
-  //                 setFormData({ ...formData, description: e.target.value })
-  //               }
-  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-  //               rows={3}
-  //               required
-  //             />
-  //           </div>
-
-  //           <div>
-  //             <label className="block text-sm font-medium text-gray-700 mb-1">
-  //               Expiry Time
-  //             </label>
-  //             <input
-  //               type="datetime-local"
-  //               value={formData.expiry_time}
-  //               onChange={(e) =>
-  //                 setFormData({ ...formData, expiry_time: e.target.value })
-  //               }
-  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-  //               required
-  //             />
-  //           </div>
-
-  //           <div>
-  //             <label className="block text-sm font-medium text-gray-700 mb-1">
-  //               Temperature Requirements
-  //             </label>
-  //             <input
-  //               type="text"
-  //               value={formData.temperature_requirements}
-  //               onChange={(e) =>
-  //                 setFormData({
-  //                   ...formData,
-  //                   temperature_requirements: e.target.value,
-  //                 })
-  //               }
-  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-  //               placeholder="e.g., Refrigerated, Room temperature"
-  //             />
-  //           </div>
-
-  //           <div>
-  //             <label className="block text-sm font-medium text-gray-700 mb-1">
-  //               Pickup Window Start
-  //             </label>
-  //             <input
-  //               type="datetime-local"
-  //               value={formData.pickup_window_start}
-  //               onChange={(e) =>
-  //                 setFormData({
-  //                   ...formData,
-  //                   pickup_window_start: e.target.value,
-  //                 })
-  //               }
-  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-  //               required
-  //             />
-  //           </div>
-
-  //           <div>
-  //             <label className="block text-sm font-medium text-gray-700 mb-1">
-  //               Pickup Window End
-  //             </label>
-  //             <input
-  //               type="datetime-local"
-  //               value={formData.pickup_window_end}
-  //               onChange={(e) =>
-  //                 setFormData({
-  //                   ...formData,
-  //                   pickup_window_end: e.target.value,
-  //                 })
-  //               }
-  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-  //               required
-  //             />
-  //           </div>
-
-  //           <div className="md:col-span-2">
-  //             <label className="block text-sm font-medium text-gray-700 mb-1">
-  //               Dietary Information
-  //             </label>
-  //             <input
-  //               type="text"
-  //               value={formData.dietary_info}
-  //               onChange={(e) =>
-  //                 setFormData({ ...formData, dietary_info: e.target.value })
-  //               }
-  //               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-  //               placeholder="e.g., Vegetarian, Contains nuts"
-  //             />
-  //           </div>
-  //         </div>
-
-  //         <div>
-  //           <label className="block text-sm font-medium text-gray-700 mb-1">
-  //             Upload Image
-  //           </label>
-  //           <input
-  //             type="file"
-  //             accept="image/*"
-  //             onChange={(e) => {
-  //               if (e.target.files && e.target.files[0]) {
-  //                 setFormData({ ...formData, img: e.target.files[0] });
-  //               }
-  //             }}
-  //             className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
-  //           />
-  //         </div>
-
-  //         <div className="flex flex-col sm:flex-row sm:justify-end sm:space-x-4 space-y-3 sm:space-y-0">
-  //           <button
-  //             type="button"
-  //             onClick={() => setShowDonationForm(false)}
-  //             className="w-full sm:w-auto px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm"
-  //           >
-  //             Cancel
-  //           </button>
-  //           <button
-  //             type="submit"
-  //             className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-  //           >
-  //             Create Donation
-  //           </button>
-  //         </div>
-  //       </form>
-  //     </div>
-  //   </div>
-  // );
 
   const Overview = () => (
     <>
@@ -681,6 +504,7 @@ const DonorDashboard = () => {
                 <th className="p-4 text-left">Quantity</th>
                 <th className="p-4 text-left">Pickup Window</th>
                 <th className="p-4 text-left">Expiry Time</th>
+                <th className="p-4 text-left">Pickup Location</th>
                 <th className="p-4 text-left">Status</th>
                 <th className="p-4 text-left">Actions</th>
               </tr>
@@ -709,6 +533,11 @@ const DonorDashboard = () => {
                     {new Date(
                       donation.expiryTime || donation.expiry_time
                     ).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3">
+                    {
+                      donation.pickup_location
+                  }
                   </td>
                   <td className="px-4 py-3">
                     <select

@@ -152,3 +152,10 @@ export const getOwnUser = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+export const getOrgsNames=async(req,res)=>{
+
+  const orgs=await User.find({role:"ngo"}).select("organization_name");
+
+  res.json(orgs)
+}
