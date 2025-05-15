@@ -29,6 +29,7 @@ interface NGOContextType {
   getNGOStats: () => Promise<void>;
   getVolunteers: () => Promise<void>;
   getClaimedFoods: () => Promise<void>;
+  assignVolunteerToFood: (volunteerId: string, foodId: string) => Promise<void>;
 }
 
 const NGOContext = createContext<NGOContextType | undefined>(undefined);
@@ -114,8 +115,30 @@ export function NGOProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function assignVolunteerToFood(
+    volunteerId: string,
+    foodId: string
+  ) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/ngo/assign/volunteer`,
+        { volunteerId, foodId },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+      console.log("Volunteer assigned successfully:", response.data);
+    } catch (error) {
+      console.error("Failed to assign volunteer:", error);
+    }
+  }
+
   return (
-    <NGOContext.Provider value={{ stats, volunteers, claimedFoods, getNGOStats, getVolunteers, getClaimedFoods }}>
+    <NGOContext.Provider value={{ stats, volunteers, claimedFoods, getNGOStats, getVolunteers, getClaimedFoods,assignVolunteerToFood }}>
       {children}
     </NGOContext.Provider>
   );

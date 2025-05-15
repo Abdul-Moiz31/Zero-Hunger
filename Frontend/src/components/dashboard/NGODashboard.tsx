@@ -1,6 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { useNGOContext } from '@/contexts/ngoContext';
-import { Users, Package2, MapPin, Plus, Pencil, Trash2, X, Search, Filter, DollarSign } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useNGOContext } from "@/contexts/ngoContext";
+import {
+  Users,
+  Package2,
+  MapPin,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Search,
+  Filter,
+  DollarSign,
+  Eye,
+} from "lucide-react";
 
 // Use interfaces from the NGO context
 interface Volunteer {
@@ -10,7 +22,7 @@ interface Volunteer {
   contact_number: string;
   address: string;
   completedOrders: number;
-  status: 'Active' | 'Inactive';
+  status: "Active" | "Inactive";
   joinedDate: string;
 }
 
@@ -19,7 +31,7 @@ interface Donation {
   donorName: string;
   amount: number;
   date: string;
-  status: 'Pending' | 'Completed' | 'Cancelled';
+  status: "Pending" | "Completed" | "Cancelled";
   assignedVolunteer: string | null;
 }
 
@@ -47,38 +59,62 @@ interface Food {
 }
 
 const NGODashboard = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [showVolunteerForm, setShowVolunteerForm] = useState(false);
-  const [editingVolunteer, setEditingVolunteer] = useState<Volunteer | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'Active' | 'Inactive'>('all');
-  const [donationStatusFilter, setDonationStatusFilter] = useState<'all' | 'Pending' | 'Completed' | 'Cancelled'>('all');
-  const [foodStatusFilter, setFoodStatusFilter] = useState<'all' | 'assigned'>('all');
+  const [editingVolunteer, setEditingVolunteer] = useState<Volunteer | null>(
+    null
+  );
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "Active" | "Inactive"
+  >("all");
+  const [donationStatusFilter, setDonationStatusFilter] = useState<
+    "all" | "Pending" | "Completed" | "Cancelled"
+  >("all");
+  const [foodStatusFilter, setFoodStatusFilter] = useState<"all" | "assigned">(
+    "all"
+  );
 
   // Replace with empty arrays instead of mock data
   const [donations, setDonations] = useState<Donation[]>([]);
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
 
   // Get data from NGO context
-  const { getNGOStats, getClaimedFoods, stats, getVolunteers, volunteers, claimedFoods } = useNGOContext();
+  const {
+    getNGOStats,
+    getClaimedFoods,
+    stats,
+    getVolunteers,
+    volunteers,
+    claimedFoods,
+    assignVolunteerToFood
+  } = useNGOContext();
 
-  const filteredVolunteers = volunteers.filter(volunteer => {
-    const matchesSearch = volunteer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         volunteer.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || volunteer.status === statusFilter;
+  const filteredVolunteers = volunteers.filter((volunteer) => {
+    const matchesSearch =
+      volunteer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      volunteer.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || volunteer.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const filteredDonations = donations.filter(donation => {
-    const matchesSearch = donation.donorName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = donationStatusFilter === 'all' || donation.status === donationStatusFilter;
+  const filteredDonations = donations.filter((donation) => {
+    const matchesSearch = donation.donorName
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      donationStatusFilter === "all" ||
+      donation.status === donationStatusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const filteredClaimedFoods = claimedFoods.filter(food => {
-    const matchesSearch = food.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         food.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = foodStatusFilter === 'all' || food.status === foodStatusFilter;
+  const filteredClaimedFoods = claimedFoods.filter((food) => {
+    const matchesSearch =
+      food.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      food.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      foodStatusFilter === "all" || food.status === foodStatusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -105,13 +141,13 @@ const NGODashboard = () => {
       name: volunteer.name,
       email: volunteer.email,
       contact_number: volunteer.contact_number,
-      address: volunteer.address
+      address: volunteer.address,
     });
     setShowVolunteerForm(true);
   };
 
   const handleDeleteVolunteer = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this volunteer?')) {
+    if (window.confirm("Are you sure you want to delete this volunteer?")) {
       console.log("Deleting volunteer:", id);
     }
   };
@@ -119,22 +155,27 @@ const NGODashboard = () => {
   const handleCloseForm = () => {
     setShowVolunteerForm(false);
     setEditingVolunteer(null);
-    setFormData({ name: '', email: '', contact_number: '', address: '' });
+    setFormData({ name: "", email: "", contact_number: "", address: "" });
   };
 
   const handleAssignVolunteer = (donationId: string, volunteerId: string) => {
-    console.log("Assigning volunteer:", volunteerId, "to donation:", donationId);
+    
+    assignVolunteerToFood(volunteerId,donationId);
+
   };
 
-  const handleUpdateDonationStatus = (donationId: string, status: 'Pending' | 'Completed' | 'Cancelled') => {
+  const handleUpdateDonationStatus = (
+    donationId: string,
+    status: "Pending" | "Completed" | "Cancelled"
+  ) => {
     console.log("Updating donation status:", donationId, status);
   };
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    contact_number: '',
-    address: ''
+    name: "",
+    email: "",
+    contact_number: "",
+    address: "",
   });
 
   const VolunteerForm = () => (
@@ -142,9 +183,9 @@ const NGODashboard = () => {
       <div className="bg-white rounded-xl p-8 max-w-md w-full animate-scaleIn">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-semibold">
-            {editingVolunteer ? 'Edit Volunteer' : 'Add New Volunteer'}
+            {editingVolunteer ? "Edit Volunteer" : "Add New Volunteer"}
           </h3>
-          <button 
+          <button
             onClick={handleCloseForm}
             className="text-gray-500 hover:text-gray-700 transition-colors"
           >
@@ -153,40 +194,56 @@ const NGODashboard = () => {
         </div>
         <form onSubmit={handleAddVolunteer} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Name
+            </label>
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
             <input
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Contact Number
+            </label>
             <input
               type="tel"
               value={formData.contact_number}
-              onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, contact_number: e.target.value })
+              }
               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Address
+            </label>
             <textarea
               value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, address: e.target.value })
+              }
               className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               rows={3}
               required
@@ -196,7 +253,7 @@ const NGODashboard = () => {
             type="submit"
             className="w-full bg-green-600 text-white py-2.5 rounded-lg font-semibold hover:bg-green-500 transition-all duration-300 transform hover:-translate-y-0.5"
           >
-            {editingVolunteer ? 'Update Volunteer' : 'Add Volunteer'}
+            {editingVolunteer ? "Update Volunteer" : "Add Volunteer"}
           </button>
         </form>
       </div>
@@ -219,12 +276,16 @@ const NGODashboard = () => {
               />
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             <div className="relative">
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'Active' | 'Inactive')}
+                onChange={(e) =>
+                  setStatusFilter(
+                    e.target.value as "all" | "Active" | "Inactive"
+                  )
+                }
                 className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none"
               >
                 <option value="all">All Status</option>
@@ -233,7 +294,7 @@ const NGODashboard = () => {
               </select>
               <Filter className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
             </div>
-            
+
             <button
               onClick={() => setShowVolunteerForm(true)}
               className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-green-500 transition-all duration-300 transform hover:-translate-y-0.5"
@@ -250,17 +311,26 @@ const NGODashboard = () => {
               <tr className="text-left border-b border-gray-100">
                 <th className="pb-3 font-semibold text-gray-600">Name</th>
                 <th className="pb-3 font-semibold text-gray-600">Email</th>
-                <th className="pb-3 font-semibold text-gray-600">Contact Number</th>
+                <th className="pb-3 font-semibold text-gray-600">
+                  Contact Number
+                </th>
                 <th className="pb-3 font-semibold text-gray-600">Status</th>
-                <th className="pb-3 font-semibold text-gray-600">Completed Orders</th>
-                <th className="pb-3 font-semibold text-gray-600">Joined Date</th>
+                <th className="pb-3 font-semibold text-gray-600">
+                  Completed Orders
+                </th>
+                <th className="pb-3 font-semibold text-gray-600">
+                  Joined Date
+                </th>
                 <th className="pb-3 font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredVolunteers.length > 0 ? (
                 filteredVolunteers.map((volunteer) => (
-                  <tr key={volunteer.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                  <tr
+                    key={volunteer.id}
+                    className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                  >
                     <td className="py-4">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
@@ -274,16 +344,20 @@ const NGODashboard = () => {
                     <td className="py-4">{volunteer.email}</td>
                     <td className="py-4">{volunteer.contact_number}</td>
                     <td className="py-4">
-                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${
-                        volunteer.status === 'Active'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-sm font-medium ${
+                          volunteer.status === "Active"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
                         {volunteer.status}
                       </span>
                     </td>
                     <td className="py-4">{volunteer.completedOrders}</td>
-                    <td className="py-4">{new Date(volunteer.joinedDate).toLocaleDateString()}</td>
+                    <td className="py-4">
+                      {new Date(volunteer.joinedDate).toLocaleDateString()}
+                    </td>
                     <td className="py-4">
                       <div className="flex space-x-2">
                         <button
@@ -334,11 +408,19 @@ const NGODashboard = () => {
               />
             </div>
           </div>
-          
+
           <div className="relative">
             <select
               value={donationStatusFilter}
-              onChange={(e) => setDonationStatusFilter(e.target.value as 'all' | 'Pending' | 'Completed' | 'Cancelled')}
+              onChange={(e) =>
+                setDonationStatusFilter(
+                  e.target.value as
+                    | "all"
+                    | "Pending"
+                    | "Completed"
+                    | "Cancelled"
+                )
+              }
               className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none"
             >
               <option value="all">All Status</option>
@@ -358,21 +440,36 @@ const NGODashboard = () => {
                 <th className="pb-3 font-semibold text-gray-600">Amount</th>
                 <th className="pb-3 font-semibold text-gray-600">Date</th>
                 <th className="pb-3 font-semibold text-gray-600">Status</th>
-                <th className="pb-3 font-semibold text-gray-600">Assigned Volunteer</th>
+                <th className="pb-3 font-semibold text-gray-600">
+                  Assigned Volunteer
+                </th>
                 <th className="pb-3 font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredDonations.length > 0 ? (
                 filteredDonations.map((donation) => (
-                  <tr key={donation.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                  <tr
+                    key={donation.id}
+                    className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                  >
                     <td className="py-4">{donation.donorName}</td>
                     <td className="py-4">PKR {donation.amount}</td>
-                    <td className="py-4">{new Date(donation.date).toLocaleDateString()}</td>
+                    <td className="py-4">
+                      {new Date(donation.date).toLocaleDateString()}
+                    </td>
                     <td className="py-4">
                       <select
                         value={donationpeat.status}
-                        onChange={(e) => handleUpdateDonationStatus(donation.id, e.target.value as 'Pending' | 'Completed' | 'Cancelled')}
+                        onChange={(e) =>
+                          handleUpdateDonationStatus(
+                            donation.id,
+                            e.target.value as
+                              | "Pending"
+                              | "Completed"
+                              | "Cancelled"
+                          )
+                        }
                         className="px-2 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 focus:outline-none"
                       >
                         <option value="Pending">Pending</option>
@@ -382,19 +479,29 @@ const NGODashboard = () => {
                     </td>
                     <td className="py-4">
                       <select
-                        value={volunteers.find(v => v.name === donation.assignedVolunteer)?.id || ''}
-                        onChange={(e) => handleAssignVolunteer(donation.id, e.target.value)}
+                        value={
+                          volunteers.find(
+                            (v) => v.name === donation.assignedVolunteer
+                          )?.id || ""
+                        }
+                        onChange={(e) =>
+                          handleAssignVolunteer(donation.id, e.target.value)
+                        }
                         className="px-2 py-1 rounded-lg border border-gray-200 focus:outline-none"
                       >
                         <option value="">Unassigned</option>
-                        {volunteers.map(v => (
-                          <option key={v.id} value={v.id}>{v.name}</option>
+                        {volunteers.map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {v.name}
+                          </option>
                         ))}
                       </select>
                     </td>
                     <td className="py-4">
                       <button
-                        onClick={() => console.log("Delete donation:", donation.id)}
+                        onClick={() =>
+                          console.log("Delete donation:", donation.id)
+                        }
                         className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
                         title="Delete donation"
                       >
@@ -417,86 +524,263 @@ const NGODashboard = () => {
     </div>
   );
 
-  const ClaimedFoodsTable = () => (
-    <div className="bg-white rounded-xl shadow-sm">
-      <div className="p-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <div className="flex-1 w-full md:w-auto">
-            <div className="relative">
-              <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search claimed foods..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
+  const ClaimedFoodsTable = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedFood, setSelectedFood] = useState();
+    const [selectedVolunteer, setSelectedVolunteer] = useState();
+
+    return (
+      <div className="bg-white rounded-xl shadow-sm">
+        {/* Modal */}
+
+        {/* Modal Overlay */}
+        {isModalOpen && selectedFood && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-2xl w-full mx-auto">
+              {/* Header */}
+              <div className="flex justify-between items-center bg-green-600 px-6 py-4">
+                <h2 className="text-lg font-semibold text-white">
+                  Food & Donor Details
+                </h2>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-white hover:text-gray-200"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              {/* Body */}
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Image */}
+                <div className="flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden h-48">
+                  {selectedFood.img ? (
+                    <>
+                      <img
+                        src={selectedFood.img}
+                        alt={selectedFood.title}
+                        className="object-cover w-full h-full"
+                      />
+                    </>
+                  ) : (
+                    <span className="text-gray-400">No Image Available</span>
+                  )}
+                </div>
+                {/* Details */}
+                <div className="space-y-3">
+                  <div>
+                    <span className="font-semibold">Title:</span>{" "}
+                    {selectedFood.title}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Description:</span>{" "}
+                    {selectedFood.description}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Quantity:</span>{" "}
+                    {selectedFood.quantity} {selectedFood.quantity_unit}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Expiry:</span>{" "}
+                    {new Date(selectedFood.expiry_time).toLocaleString()}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Pickup Window:</span>{" "}
+                    {new Date(
+                      selectedFood.pickup_window_start
+                    ).toLocaleString()}{" "}
+                    -{" "}
+                    {new Date(selectedFood.pickup_window_end).toLocaleString()}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Status:</span>{" "}
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        selectedFood.status === "assigned"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {selectedFood.status}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold">Accepted:</span>{" "}
+                    {new Date(selectedFood.acceptance_time).toLocaleString()}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Temperature:</span>{" "}
+                    {selectedFood.temperature_requirements}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Dietary Info:</span>{" "}
+                    {selectedFood.dietary_info}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Donor:</span>{" "}
+                    {selectedFood.donorId.name} ({selectedFood.donorId.email})
+                  </div>
+                  <div>
+                    <span className="font-semibold">Volunteer:</span>{" "}
+                    {selectedFood.volunteerId.name} ({selectedFood.volunteerId.email})
+                  </div>
+
+                  {/* // place the dropdown to assign the volunteer */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Assign Volunteer
+                    </label>
+                    <select
+                      value={selectedVolunteer}
+                      onChange={(e) => setSelectedVolunteer(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg py-2 px-3 focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="">Unassigned</option>
+                      {volunteers.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => {handleAssignVolunteer(selectedFood._id, selectedVolunteer)}}
+                      className="mt-2 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-500 transition"
+                    >
+                      Assign
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          
-          <div className="relative">
-            <select
-              value={foodStatusFilter}
-              onChange={(e) => setFoodStatusFilter(e.target.value as 'all' | 'assigned')}
-              className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none"
-            >
-              <option value="all">All Status</option>
-              <option value="assigned">Assigned</option>
-            </select>
-            <Filter className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+        )}
+
+        <div className="p-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div className="flex-1 w-full md:w-auto">
+              <div className="relative">
+                <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search claimed foods..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="relative">
+              <select
+                value={foodStatusFilter}
+                onChange={(e) =>
+                  setFoodStatusFilter(e.target.value as "all" | "assigned")
+                }
+                className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none"
+              >
+                <option value="all">All Status</option>
+                <option value="assigned">Assigned</option>
+              </select>
+              <Filter className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left border-b border-gray-100">
+                  <th className="pb-3 font-semibold text-gray-600">Title</th>
+                  <th className="pb-3 font-semibold text-gray-600">Quantity</th>
+                  <th className="pb-3 font-semibold text-gray-600">
+                    Description
+                  </th>
+                  <th className="pb-3 font-semibold text-gray-600">
+                    Expiry Time
+                  </th>
+                  <th className="pb-3 font-semibold text-gray-600">
+                    Pickup Window
+                  </th>
+                  <th className="pb-3 font-semibold text-gray-600">Status</th>
+                  <th className="pb-3 font-semibold text-gray-600">
+                    Acceptance Time
+                  </th>
+                  {/* eye button */}
+                  <th className="pb-3 font-semibold text-gray-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredClaimedFoods.length > 0 ? (
+                  filteredClaimedFoods.map((food) => (
+                    <tr
+                      key={food._id}
+                      className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                    >
+                      <td className="py-4">{food.title}</td>
+                      <td className="py-4">
+                        {food.quantity} {food.quantity_unit}
+                      </td>
+                      <td className="py-4">{food.description}</td>
+                      <td className="py-4">
+                        {new Date(food.expiry_time).toLocaleDateString()}
+                      </td>
+                      <td className="py-4">
+                        {new Date(food.pickup_window_start).toLocaleString()} -{" "}
+                        <br />
+                        {new Date(food.pickup_window_end).toLocaleString()}
+                      </td>
+                      <td className="py-4">
+                        <span
+                          className={`px-2 py-1 rounded-full text-sm font-medium ${
+                            food.status === "assigned"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {food.status}
+                        </span>
+                      </td>
+                      <td className="py-4">
+                        {new Date(food.acceptance_time).toLocaleString()}
+                      </td>
+                      <td className="py-4">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => {
+                              setSelectedFood(food);
+                              setIsModalOpen(true);
+                            }}
+                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                            title="View food details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() =>
+                              console.log("Delete claimed food:", food._id)
+                            }
+                            className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete claimed food"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="py-4 text-center text-gray-500">
+                      No claimed foods found. Try adjusting your search or
+                      filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="text-left border-b border-gray-100">
-                <th className="pb-3 font-semibold text-gray-600">Title</th>
-                <th className="pb-3 font-semibold text-gray-600">Quantity</th>
-                <th className="pb-3 font-semibold text-gray-600">Description</th>
-                <th className="pb-3 font-semibold text-gray-600">Expiry Time</th>
-                <th className="pb-3 font-semibold text-gray-600">Pickup Window</th>
-                <th className="pb-3 font-semibold text-gray-600">Status</th>
-                <th className="pb-3 font-semibold text-gray-600">Acceptance Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredClaimedFoods.length > 0 ? (
-                filteredClaimedFoods.map((food) => (
-                  <tr key={food._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                    <td className="py-4">{food.title}</td>
-                    <td className="py-4">{food.quantity} {food.quantity_unit}</td>
-                    <td className="py-4">{food.description}</td>
-                    <td className="py-4">{new Date(food.expiry_time).toLocaleDateString()}</td>
-                    <td className="py-4">
-                      {new Date(food.pickup_window_start).toLocaleString()} - <br />
-                      {new Date(food.pickup_window_end).toLocaleString()}
-                    </td>
-                    <td className="py-4">
-                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${
-                        food.status === 'assigned'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {food.status}
-                      </span>
-                    </td>
-                    <td className="py-4">{new Date(food.acceptance_time).toLocaleString()}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="py-4 text-center text-gray-500">
-                    No claimed foods found. Try adjusting your search or filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const Dashboard = () => (
     <>
@@ -530,19 +814,28 @@ const NGODashboard = () => {
           {recentActivities.length > 0 ? (
             <div className="space-y-4">
               {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex justify-between items-center border-b border-gray-100 pb-4">
+                <div
+                  key={activity.id}
+                  className="flex justify-between items-center border-b border-gray-100 pb-4"
+                >
                   <div>
                     <p className="font-semibold">{activity.description}</p>
-                    <p className="text-sm text-gray-600">By {activity.volunteerName}</p>
+                    <p className="text-sm text-gray-600">
+                      By {activity.volunteerName}
+                    </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-600">{new Date(activity.date).toLocaleDateString()}</p>
+                    <p className="text-sm text-gray-600">
+                      {new Date(activity.date).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-center text-gray-500 py-6">No recent activities to display.</p>
+            <p className="text-center text-gray-500 py-6">
+              No recent activities to display.
+            </p>
           )}
         </div>
 
@@ -552,17 +845,17 @@ const NGODashboard = () => {
             <QuickActionButton
               label="View All Donations"
               color="blue"
-              onClick={() => setActiveTab('donations')}
+              onClick={() => setActiveTab("donations")}
             />
             <QuickActionButton
               label="Manage Volunteers"
               color="green"
-              onClick={() => setActiveTab('volunteers')}
+              onClick={() => setActiveTab("volunteers")}
             />
             <QuickActionButton
               label="View Claimed Foods"
               color="purple"
-              onClick={() => setActiveTab('claimedFoods')}
+              onClick={() => setActiveTab("claimedFoods")}
             />
           </div>
         </div>
@@ -577,32 +870,32 @@ const NGODashboard = () => {
         <div className="flex space-x-4">
           <TabButton
             label="Overview"
-            isActive={activeTab === 'dashboard'}
-            onClick={() => setActiveTab('dashboard')}
+            isActive={activeTab === "dashboard"}
+            onClick={() => setActiveTab("dashboard")}
           />
           <TabButton
             label="Manage Volunteers"
-            isActive={activeTab === 'volunteers'}
-            onClick={() => setActiveTab('volunteers')}
+            isActive={activeTab === "volunteers"}
+            onClick={() => setActiveTab("volunteers")}
           />
           <TabButton
             label="Donations"
-            isActive={activeTab === 'donations'}
-            onClick={() => setActiveTab('donations')}
+            isActive={activeTab === "donations"}
+            onClick={() => setActiveTab("donations")}
           />
           <TabButton
             label="Claimed Foods"
-            isActive={activeTab === 'claimedFoods'}
-            onClick={() => setActiveTab('claimedFoods')}
+            isActive={activeTab === "claimedFoods"}
+            onClick={() => setActiveTab("claimedFoods")}
           />
         </div>
       </div>
-      
-      {activeTab === 'dashboard' ? (
+
+      {activeTab === "dashboard" ? (
         <Dashboard />
-      ) : activeTab === 'volunteers' ? (
+      ) : activeTab === "volunteers" ? (
         <VolunteersTable />
-      ) : activeTab === 'donations' ? (
+      ) : activeTab === "donations" ? (
         <DonationsTable />
       ) : (
         <ClaimedFoodsTable />
@@ -612,13 +905,13 @@ const NGODashboard = () => {
   );
 };
 
-const DashboardCard = ({ 
-  icon: Icon, 
-  title, 
-  stats, 
+const DashboardCard = ({
+  icon: Icon,
+  title,
+  stats,
   trend,
-  trendUp 
-}: { 
+  trendUp,
+}: {
   icon: React.ElementType;
   title: string;
   stats: string | { label: string; value: string }[];
@@ -643,7 +936,9 @@ const DashboardCard = ({
         ) : (
           <p className="text-2xl font-bold text-gray-800">{stats}</p>
         )}
-        <p className={`text-sm ${trendUp ? 'text-green-600' : 'text-gray-600'}`}>
+        <p
+          className={`text-sm ${trendUp ? "text-green-600" : "text-gray-600"}`}
+        >
           {trend}
         </p>
       </div>
@@ -651,19 +946,19 @@ const DashboardCard = ({
   </div>
 );
 
-const QuickActionButton = ({ 
-  label, 
-  color, 
-  onClick 
-}: { 
+const QuickActionButton = ({
+  label,
+  color,
+  onClick,
+}: {
   label: string;
-  color: 'blue' | 'green' | 'purple';
+  color: "blue" | "green" | "purple";
   onClick: () => void;
 }) => {
   const colors = {
-    blue: 'bg-blue-600 hover:bg-blue-500',
-    green: 'bg-green-600 hover:bg-green-500',
-    purple: 'bg-purple-600 hover:bg-purple-500'
+    blue: "bg-blue-600 hover:bg-blue-500",
+    green: "bg-green-600 hover:bg-green-500",
+    purple: "bg-purple-600 hover:bg-purple-500",
   };
 
   return (
@@ -676,11 +971,11 @@ const QuickActionButton = ({
   );
 };
 
-const TabButton = ({ 
-  label, 
-  isActive, 
-  onClick 
-}: { 
+const TabButton = ({
+  label,
+  isActive,
+  onClick,
+}: {
   label: string;
   isActive: boolean;
   onClick: () => void;
@@ -688,9 +983,9 @@ const TabButton = ({
   <button
     onClick={onClick}
     className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-      isActive 
-        ? 'bg-green-600 text-white shadow-md hover:bg-green-500' 
-        : 'text-gray-600 hover:bg-gray-100'
+      isActive
+        ? "bg-green-600 text-white shadow-md hover:bg-green-500"
+        : "text-gray-600 hover:bg-gray-100"
     }`}
   >
     {label}
