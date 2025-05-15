@@ -63,10 +63,10 @@ const Header = () => {
             <p className="text-sm text-gray-600">{user?.email || ''}</p>
           </div>
           <button
-            onClick={() => user && navigate(`/${user.role}/dashboard`)}
+            onClick={() => navigate(`/${user.role}-dashboard`)}
             className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
           >
-            Dashboard
+            Dashboard 
           </button>
           <button
             onClick={handleSignOut}

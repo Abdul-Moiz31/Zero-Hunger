@@ -1,8 +1,10 @@
+// Listings.tsx
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Search, Filter, MapPin, Clock, Tag } from 'lucide-react';
+import { Search, Filter, MapPin, Clock, Tag, Thermometer, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useFoodListings } from '@/contexts/FoodContext';
 
 const useAuth = () => {
   const [user, setUser] = useState<{ name: string } | null>(null);
@@ -15,173 +17,82 @@ const useAuth = () => {
   return { user };
 };
 
-interface FoodListing {
-  id: string;
-  title: string;
-  description: string;
-  location: string;
-  quantity: number;
-  expiryDate: string;
-  category: string;
-  imageUrl: string;
-  donor: {
-    name: string;
-    rating: number;
-  };
-}
-
 const Listings = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [listings, setListings] = useState<FoodListing[]>([]);
+  const [selectedDietaryInfo, setSelectedDietaryInfo] = useState('all');
   const [popupVisible, setPopupVisible] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Mock data with Pexels image URLs
-  const mockListings: FoodListing[] = [
-    {
-      id: '1',
-      title: 'Fresh Naan Bread',
-      description: 'Freshly baked naan bread, perfect for community meals.',
-      location: 'Gulberg, Lahore',
-      quantity: 100,
-      expiryDate: '2025-05-20T00:00:00Z',
-      category: 'Baked Goods',
-      imageUrl: 'https://images.pexels.com/photos/1417945/pexels-photo-1417945.jpeg', // Naan bread
-      donor: { name: 'Muhammad Ali', rating: 4.5 },
-    },
-    {
-      id: '2',
-      title: 'Vegetable Boxes',
-      description: 'Assorted fresh vegetables including tomatoes, onions, and potatoes.',
-      location: 'Clifton, Karachi',
-      quantity: 30,
-      expiryDate: '2025-05-18T00:00:00Z',
-      category: 'Vegetables',
-      imageUrl: 'https://images.pexels.com/photos/143133/pexels-photo-143133.jpeg', // Vegetables
-      donor: { name: 'Fatima Khan', rating: 4.0 },
-    },
-    {
-      id: '3',
-      title: 'Rice Sacks',
-      description: 'High-quality basmati rice for distribution.',
-      location: 'F-7, Islamabad',
-      quantity: 50,
-      expiryDate: '2025-06-01T00:00:00Z',
-      category: 'Grains',
-      imageUrl: 'https://images.pexels.com/photos/723198/pexels-photo-723198.jpeg', // Rice
-      donor: { name: 'Ahmed Hassan', rating: 4.8 },
-    },
-    {
-      id: '4',
-      title: 'Canned Fruits',
-      description: 'Canned peaches and pineapples, long shelf life.',
-      location: 'Model Town, Lahore',
-      quantity: 80,
-      expiryDate: '2025-12-15T00:00:00Z',
-      category: 'Canned Goods',
-      imageUrl: 'https://images.pexels.com/photos/1291680/pexels-photo-1291680.jpeg', // Canned fruits
-      donor: { name: 'Ayesha Siddiqui', rating: 3.9 },
-    },
-    {
-      id: '5',
-      title: 'Milk Cartons',
-      description: 'Pasteurized milk cartons for children.',
-      location: 'DHA, Karachi',
-      quantity: 60,
-      expiryDate: '2025-05-22T00:00:00Z',
-      category: 'Dairy',
-      imageUrl: 'https://images.pexels.com/photos/533661/pexels-photo-533661.jpeg', // Milk
-      donor: { name: 'Omar Farooq', rating: 4.2 },
-    },
-    {
-      id: '6',
-      title: 'Lentil Bags',
-      description: 'Red and yellow lentils for soup kitchens.',
-      location: 'Bahria Town, Rawalpindi',
-      quantity: 40,
-      expiryDate: '2025-07-10T00:00:00Z',
-      category: 'Legumes',
-      imageUrl: 'https://images.pexels.com/photos/3296420/pexels-photo-3296420.jpeg', // Lentils
-      donor: { name: 'Zainab Malik', rating: 4.6 },
-    },
-    {
-      id: '7',
-      title: 'Fresh Fruits',
-      description: 'Apples, oranges, and bananas, freshly harvested.',
-      location: 'Johar Town, Lahore',
-      quantity: 70,
-      expiryDate: '2025-05-19T00:00:00Z',
-      category: 'Fruits',
-      imageUrl: 'https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg', // Fresh fruits
-      donor: { name: 'Bilal Ahmed', rating: 4.3 },
-    },
-    {
-      id: '8',
-      title: 'Cooking Oil',
-      description: 'Pure canola oil in 5-liter cans.',
-      location: 'Gulshan, Karachi',
-      quantity: 25,
-      expiryDate: '2025-11-30T00:00:00Z',
-      category: 'Oils',
-      imageUrl: 'https://images.pexels.com/photos/4197447/pexels-photo-4197447.jpeg', // Cooking oil
-      donor: { name: 'Hafsa Noor', rating: 4.1 },
-    },
-    {
-      id: '9',
-      title: 'Pasta Packs',
-      description: 'Assorted pasta shapes for community kitchens.',
-      location: 'F-11, Islamabad',
-      quantity: 90,
-      expiryDate: '2025-10-01T00:00:00Z',
-      category: 'Pasta',
-      imageUrl: 'https://images.pexels.com/photos/1279330/pexels-photo-1279330.jpeg', // Pasta
-      donor: { name: 'Yusuf Khan', rating: 4.7 },
-    },
-    {
-      id: '10',
-      title: 'Egg Trays',
-      description: 'Fresh farm eggs, packed in trays of 30.',
-      location: 'PWD, Islamabad',
-      quantity: 120,
-      expiryDate: '2025-05-25T00:00:00Z',
-      category: 'Eggs',
-      imageUrl: 'https://images.pexels.com/photos/162712/pexels-photo-162712.jpeg', // Eggs
-      donor: { name: 'Maryam Iqbal', rating: 4.4 },
-    },
-  ];
-
+  const { getAllAvailableListings, listings, loading, claimFood } = useFoodListings();
+  
   useEffect(() => {
-    // Set mock data only once on mount
-    setListings(mockListings);
+    getAllAvailableListings();
   }, []); // Empty dependency array to run once
 
-  // Memoize categories to prevent re-computation
-  const categories = useMemo(() => ['all', ...new Set(listings.map((listing) => listing.category))], [listings]);
+  // Extract unique dietary info options for filtering
+  const dietaryOptions = useMemo(() => {
+    const options = listings
+      .map(listing => listing.dietary_info)
+      .filter((info): info is string => !!info);
+    return ['all', ...new Set(options)];
+  }, [listings]);
 
-  // Memoize filtered listings to optimize performance
+  // Filter listings based on search term and dietary info
   const filteredListings = useMemo(() => {
     return listings.filter((listing) => {
       const matchesSearch =
         listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         listing.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || listing.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+      const matchesDietaryInfo = 
+        selectedDietaryInfo === 'all' || 
+        listing.dietary_info === selectedDietaryInfo;
+      return matchesSearch && matchesDietaryInfo;
     });
-  }, [listings, searchTerm, selectedCategory]);
+  }, [listings, searchTerm, selectedDietaryInfo]);
 
-  const handleClaim = (listingId: string) => {
+  const [claimLoading, setClaimLoading] = useState<string | null>(null);
+  const [claimResult, setClaimResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleClaim = async (listingId: string) => {
     if (!user) {
       setPopupVisible(true);
-    } else {
-      navigate(`/claim/${listingId}`);
+      return;
+    }
+    
+    setClaimLoading(listingId);
+    
+    try {
+      const result = await claimFood(listingId);
+      
+      setClaimResult(result);
+      
+      if (result.success) {
+        // Show success message briefly before redirecting
+        setTimeout(() => {
+          navigate('/my-claims');
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("Error claiming food:", error);
+      setClaimResult({
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to claim food'
+      });
+    } finally {
+      setClaimLoading(null);
     }
   };
 
   const handleLoginRedirect = () => {
     setPopupVisible(false);
     navigate('/login');
+  };
+
+  // Format donor name for display
+  const getDonorName = (donor: any) => {
+    if (!donor) return 'Unknown';
+    return typeof donor === 'object' ? donor.name : 'Unknown';
   };
 
   return (
@@ -207,37 +118,40 @@ const Listings = () => {
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              value={selectedDietaryInfo}
+              onChange={(e) => setSelectedDietaryInfo(e.target.value)}
               className="pl-10 pr-8 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none bg-white"
             >
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
+              {dietaryOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option === 'all' ? 'All Dietary Types' : option}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
-        {filteredListings.length === 0 ? (
-          <p className="text-gray-600 text-center">No listings found.</p>
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+          </div>
+        ) : filteredListings.length === 0 ? (
+          <p className="text-gray-600 text-center py-12">No listings found.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredListings.map((listing) => (
               <div
-                key={listing.id}
+                key={listing._id}
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
                 <img
-                  src={listing.imageUrl}
+                  src={listing.img || '/default-food-image.jpg'}
                   alt={listing.title}
                   className="w-full h-48 object-cover"
                   onError={(e) => {
-                    console.error(`Failed to load image for ${listing.title}: ${listing.imageUrl}`);
-                    e.currentTarget.src = '/default-food-image.jpg'; // Local fallback
+                    e.currentTarget.src = '/default-food-image.jpg'; // Fallback image
                   }}
-                  loading="lazy" // Optimize image loading
+                  loading="lazy"
                 />
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
@@ -250,34 +164,59 @@ const Listings = () => {
                   <div className="space-y-2">
                     <div className="flex items-center text-gray-600">
                       <MapPin className="w-4 h-4 mr-2" />
-                      <span className="text-sm">{listing.location}</span>
+                      <span className="text-sm">Pickup window: {listing.pickup_window_start} - {listing.pickup_window_end}</span>
                     </div>
                     <div className="flex items-center text-gray-600">
                       <Clock className="w-4 h-4 mr-2" />
                       <span className="text-sm">
-                        Expires: {new Date(listing.expiryDate).toLocaleDateString()}
+                        Expires: {new Date(listing.expiry_time).toLocaleDateString()}
                       </span>
                     </div>
                     <div className="flex items-center text-gray-600">
                       <Tag className="w-4 h-4 mr-2" />
-                      <span className="text-sm">Quantity: {listing.quantity} {listing.category.toLowerCase()}</span>
+                      <span className="text-sm">Quantity: {listing.quantity} {listing.unit}</span>
                     </div>
+                    {listing.temperature_requirements && (
+                      <div className="flex items-center text-gray-600">
+                        <Thermometer className="w-4 h-4 mr-2" />
+                        <span className="text-sm">Temp: {listing.temperature_requirements}</span>
+                      </div>
+                    )}
+                    {listing.dietary_info && (
+                      <div className="flex items-center text-gray-600">
+                        <Info className="w-4 h-4 mr-2" />
+                        <span className="text-sm">Diet: {listing.dietary_info}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-gray-100">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-gray-800">{listing.donor.name}</p>
-                        <div className="flex items-center">
-                          <span className="text-yellow-400">★</span>
-                          <span className="text-sm text-gray-600 ml-1">{listing.donor.rating.toFixed(1)}</span>
-                        </div>
+                        <p className="font-medium text-gray-800">
+                          {getDonorName(listing.donorId)}
+                        </p>
                       </div>
                       <button
-                        onClick={() => handleClaim(listing.id)}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        onClick={() => handleClaim(listing._id)}
+                        disabled={claimLoading === listing._id}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          claimLoading === listing._id 
+                            ? 'bg-gray-400 text-white cursor-not-allowed' 
+                            : 'bg-green-600 text-white hover:bg-green-700'
+                        }`}
                       >
-                        Claim
+                        {claimLoading === listing._id ? (
+                          <span className="flex items-center justify-center">
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Claiming...
+                          </span>
+                        ) : (
+                          'Claim'
+                        )}
                       </button>
                     </div>
                   </div>
@@ -297,6 +236,29 @@ const Listings = () => {
                 className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
               >
                 Go to Login
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {claimResult && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className={`bg-white rounded-lg p-6 shadow-xl text-center max-w-sm w-full ${
+              claimResult.success ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'
+            }`}>
+              <h2 className="text-lg font-semibold mb-4 text-gray-800">
+                {claimResult.success ? 'Success!' : 'Operation Failed'}
+              </h2>
+              <p className="text-gray-600 mb-6">{claimResult.message}</p>
+              <button
+                onClick={() => setClaimResult(null)}
+                className={`px-4 py-2 rounded transition ${
+                  claimResult.success 
+                    ? 'bg-green-600 hover:bg-green-700 text-white' 
+                    : 'bg-red-600 hover:bg-red-700 text-white'
+                }`}
+              >
+                {claimResult.success ? 'Great!' : 'Close'}
               </button>
             </div>
           </div>
