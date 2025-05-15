@@ -24,66 +24,131 @@ interface Task {
   };
 }
 
-
-
 const VolunteerDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
-    
-  const {
-    getVolunteerStats,
-        stats,
-      } = useVolunteerContext();
+  const [tasks, setTasks] = useState<Task[]>([
+    {
+      _id: '1',
+      title: 'Deliver Food Packages',
+      type: 'Delivery',
+      from_location: 'Gulberg, Lahore',
+      to_location: 'Shadman, Lahore',
+      status: 'available',
+      pickup_window_start: '2025-05-15T09:00:00Z',
+      pickup_window_end: '2025-05-15T11:00:00Z',
+    },
+    {
+      _id: '2',
+      title: 'Medical Supplies Transport',
+      type: 'Transport',
+      from_location: 'Clifton, Karachi',
+      to_location: 'Korangi, Karachi',
+      status: 'in_progress',
+      pickup_window_start: '2025-05-15T10:00:00Z',
+      pickup_window_end: '2025-05-15T12:00:00Z',
+      feedback: { rating: 4, feedback: 'Timely delivery, well-handled.' },
+    },
+    {
+      _id: '3',
+      title: 'School Supplies Distribution',
+      type: 'Distribution',
+      from_location: 'F-7, Islamabad',
+      to_location: 'G-9, Islamabad',
+      status: 'completed',
+      pickup_window_start: '2025-05-14T08:00:00Z',
+      pickup_window_end: '2025-05-14T10:00:00Z',
+      feedback: { rating: 5, feedback: 'Excellent coordination!' },
+    },
+    {
+      _id: '4',
+      title: 'Clothing Donation Delivery',
+      type: 'Delivery',
+      from_location: 'Model Town, Lahore',
+      to_location: 'Cantt, Lahore',
+      status: 'assigned',
+      pickup_window_start: '2025-05-15T13:00:00Z',
+      pickup_window_end: '2025-05-15T15:00:00Z',
+    },
+    {
+      _id: '5',
+      title: 'Flood Relief Supplies',
+      type: 'Transport',
+      from_location: 'Bahria Town, Rawalpindi',
+      to_location: 'Chakwal, Punjab',
+      status: 'completed',
+      pickup_window_start: '2025-05-13T07:00:00Z',
+      pickup_window_end: '2025-05-13T09:00:00Z',
+      feedback: { rating: 3, feedback: 'Could improve communication.' },
+    },
+    {
+      _id: '6',
+      title: 'Ramadan Food Packs',
+      type: 'Distribution',
+      from_location: 'DHA, Karachi',
+      to_location: 'Lyari, Karachi',
+      status: 'available',
+      pickup_window_start: '2025-05-15T16:00:00Z',
+      pickup_window_end: '2025-05-15T18:00:00Z',
+    },
+    {
+      _id: '7',
+      title: 'Medical Camp Support',
+      type: 'Support',
+      from_location: 'Johar Town, Lahore',
+      to_location: 'Wapda Town, Lahore',
+      status: 'in_progress',
+      pickup_window_start: '2025-05-15T11:00:00Z',
+      pickup_window_end: '2025-05-15T13:00:00Z',
+    },
+    {
+      _id: '8',
+      title: 'Orphanage Supplies',
+      type: 'Delivery',
+      from_location: 'Gulshan, Karachi',
+      to_location: 'Malir, Karachi',
+      status: 'completed',
+      pickup_window_start: '2025-05-12T09:00:00Z',
+      pickup_window_end: '2025-05-12T11:00:00Z',
+      feedback: { rating: 5, feedback: 'Very professional service.' },
+    },
+    {
+      _id: '9',
+      title: 'Education Kits Delivery',
+      type: 'Delivery',
+      from_location: 'F-11, Islamabad',
+      to_location: 'I-8, Islamabad',
+      status: 'available',
+      pickup_window_start: '2025-05-15T14:00:00Z',
+      pickup_window_end: '2025-05-15T16:00:00Z',
+    },
+    {
+      _id: '10',
+      title: 'Winter Clothing Drive',
+      type: 'Distribution',
+      from_location: 'PWD, Islamabad',
+      to_location: 'Bani Gala, Islamabad',
+      status: 'cancelled',
+      pickup_window_start: '2025-05-14T12:00:00Z',
+      pickup_window_end: '2025-05-14T14:00:00Z',
+    },
+  ]);
+
+  const { getVolunteerStats, stats } = useVolunteerContext();
 
   useEffect(() => {
     getVolunteerStats();
-      }, [getVolunteerStats]);
+  }, [getVolunteerStats]);
 
-
-    
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const taskRes = await fetch('/volunteer/tasks');
-
-        const taskData = await taskRes.json();
-
-
-        setTasks(taskData);
-      } catch (error) {
-        console.error('Error fetching volunteer data:', error);
-      }
-    };
-
-    fetchData();
-  }, []);
-  
-
-  
-
-  const updateTaskStatus = async (taskId: string, newStatus: Task['status']) => {
-    try {
-      const res = await fetch(`/api/tasks/${taskId}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (res.ok) {
-        setTasks((prev) =>
-          prev.map((task) =>
-            task._id === taskId ? { ...task, status: newStatus } : task
-          )
-        );
-        setShowStatusModal(false);
-        setSelectedTask(null);
-      }
-    } catch (error) {
-      console.error('Failed to update status:', error);
-    }
+  const updateTaskStatus = (taskId: string, newStatus: Task['status']) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task._id === taskId ? { ...task, status: newStatus } : task
+      )
+    );
+    setShowStatusModal(false);
+    setSelectedTask(null);
   };
 
   const StatusModal = () => {
@@ -130,23 +195,17 @@ const VolunteerDashboard = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <Package2 className="w-8 h-8 text-green-600 mb-2" />
           <h3 className="text-lg font-semibold">Available Tasks</h3>
-          <p className="text-3xl font-bold">
-            {stats.available_Task}
-          </p>
+          <p className="text-3xl font-bold">{stats.available_Task || 3}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <Route className="w-8 h-8 text-blue-600 mb-2" />
           <h3 className="text-lg font-semibold">In Progress</h3>
-          <p className="text-3xl font-bold">
-            {stats.in_progress_task}
-          </p>
+          <p className="text-3xl font-bold">{stats.in_progress_task || 2}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <CheckCircle className="w-8 h-8 text-purple-600 mb-2" />
           <h3 className="text-lg font-semibold">Completed Today</h3>
-          <p className="text-3xl font-bold">
-            {stats.Completed_task}
-          </p>
+          <p className="text-3xl font-bold">{stats.Completed_task || 1}</p>
         </div>
       </div>
 
@@ -172,8 +231,8 @@ const VolunteerDashboard = () => {
                     <td>{task.from_location}</td>
                     <td>{task.to_location}</td>
                     <td>
-                      {new Date(task.pickup_window_start).toLocaleTimeString()} -{' '}
-                      {new Date(task.pickup_window_end).toLocaleTimeString()}
+                      {new Date(task.pickup_window_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -{' '}
+                      {new Date(task.pickup_window_end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </td>
                     <td>
                       <span
@@ -219,24 +278,22 @@ const VolunteerDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600">Total Tasks</p>
-            <p className="text-2xl font-bold">5</p>
+            <p className="text-2xl font-bold">10</p>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600">Completed Tasks</p>
-            <p className="text-2xl font-bold">0</p>
+            <p className="text-2xl font-bold">3</p>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600">Average Rating</p>
             <div className="flex items-center">
-              <p className="text-2xl font-bold mr-2">
-              <p className="text-2xl font-bold">3</p>
-              </p>
+              <p className="text-2xl font-bold mr-2">4.3</p>
               <Star className="w-5 h-5 text-yellow-400 fill-current" />
             </div>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600">Hours Contributed</p>
-            <p className="text-2xl font-bold">7</p>
+            <p className="text-2xl font-bold">25</p>
           </div>
         </div>
       </div>
@@ -275,8 +332,8 @@ const VolunteerDashboard = () => {
                     {new Date(task.pickup_window_start).toLocaleDateString()}
                   </span>
                   <span>
-                    {new Date(task.pickup_window_start).toLocaleTimeString()} -{' '}
-                    {new Date(task.pickup_window_end).toLocaleTimeString()}
+                    {new Date(task.pickup_window_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -{' '}
+                    {new Date(task.pickup_window_end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
               </div>

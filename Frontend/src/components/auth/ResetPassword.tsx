@@ -9,13 +9,24 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { token } = useParams(); // grabs the token from URL
+  const { token } = useParams();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
+    // Password strength validation
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      setLoading(false);
+      return;
+    }
+    if (!/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      setError('Password must include at least one uppercase letter and one number.');
+      setLoading(false);
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setError("Passwords don't match.");
       setLoading(false);
@@ -36,9 +47,9 @@ const ResetPassword = () => {
       }
 
       setIsSubmitted(true);
-    } catch (err: unknown ) {
+    } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setError(err.message === 'Invalid or expired token' ? 'This reset link is invalid or has expired.' : err.message);
       } else {
         setError('An unknown error occurred.');
       }

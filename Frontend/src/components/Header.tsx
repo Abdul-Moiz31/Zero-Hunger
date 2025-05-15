@@ -119,8 +119,8 @@ const Header = () => {
               {isHomePage && (
                 <>
                   <NavLink href="#about" isScrolled={isScrolled} isActive={activeSection === 'about'}>About Us</NavLink>
-                  <NavLink href="#how-it-works" isScrolled={isScrolled} isActive={activeSection === 'how-it-works'}>How It Works</NavLink>
                   <NavLink href="#impact" isScrolled={isScrolled} isActive={activeSection === 'impact'}>Our Impact</NavLink>
+                  <NavLink href="#how-it-works" isScrolled={isScrolled} isActive={activeSection === 'how-it-works'}>How It Works</NavLink>
                   <NavLink href="#partners" isScrolled={isScrolled} isActive={activeSection === 'partners'}>Partners</NavLink>
                   <NavLink href="#testimonials" isScrolled={isScrolled} isActive={activeSection === 'testimonials'}>Testimonials</NavLink>
                   <NavLink href="#contact" isScrolled={isScrolled} isActive={activeSection === 'contact'}>Contact</NavLink>
@@ -148,8 +148,8 @@ const Header = () => {
                 {isHomePage && (
                   <>
                     <MobileNavLink href="#about" isScrolled={isScrolled} setIsMenuOpen={setIsMenuOpen}>About Us</MobileNavLink>
-                    <MobileNavLink href="#how-it-works" isScrolled={isScrolled} setIsMenuOpen={setIsMenuOpen}>How It Works</MobileNavLink>
                     <MobileNavLink href="#impact" isScrolled={isScrolled} setIsMenuOpen={setIsMenuOpen}>Our Impact</MobileNavLink>
+                    <MobileNavLink href="#how-it-works" isScrolled={isScrolled} setIsMenuOpen={setIsMenuOpen}>How It Works</MobileNavLink>
                     <MobileNavLink href="#partners" isScrolled={isScrolled} setIsMenuOpen={setIsMenuOpen}>Partners</MobileNavLink>
                     <MobileNavLink href="#testimonials" isScrolled={isScrolled} setIsMenuOpen={setIsMenuOpen}>Testimonials</MobileNavLink>
                     <MobileNavLink href="#contact" isScrolled={isScrolled} setIsMenuOpen={setIsMenuOpen}>Contact</MobileNavLink>
