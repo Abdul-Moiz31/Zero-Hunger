@@ -1,4 +1,3 @@
-/* AuthContext.tsx */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -9,10 +8,15 @@ interface Org {
   organization_name: string;
 }
 
+interface AuthResponse {
+  user: User;
+  token: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<AuthResponse>;
   signOut: () => void;
   orgNames: Org[];
 }
@@ -36,7 +40,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Restore user from localStorage
     const loadUser = async () => {
       try {
         const storedUser = localStorage.getItem('user');
@@ -54,7 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     loadUser();
 
-    // Fetch organization names
     const fetchOrgs = async () => {
       try {
         const resp = await axios.get<Org[]>(`${import.meta.env.VITE_API_BASE_URL}/auth/org-names`);
@@ -66,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchOrgs();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<AuthResponse> => {
     try {
       setLoading(true);
       const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, { email, password });
@@ -74,13 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('token', token);
-      const routes: Record<string, string> = {
-        admin: '/admin-dashboard',
-        donor: '/donor-dashboard',
-        ngo: '/ngo-dashboard',
-        volunteer: '/volunteer-dashboard',
-      };
-      navigate(routes[user.role] || '/');
+      return response.data; // Return the AuthResponse
     } catch (error) {
       console.error('Login failed:', error);
       throw new Error('Invalid email or password');

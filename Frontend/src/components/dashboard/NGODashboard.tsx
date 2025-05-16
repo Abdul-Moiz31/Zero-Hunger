@@ -670,345 +670,317 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
   );
 
     const ClaimedFoodsTable = () => {
-      const [isModalOpen, setIsModalOpen] = useState(false);
-      const [selectedFood, setSelectedFood] = useState();
-      const [selectedVolunteer, setSelectedVolunteer] = useState();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedFood, setSelectedFood] = useState<Food | null>(null);
+    const [selectedVolunteer, setSelectedVolunteer] = useState<string>("");
 
       return (
-        <div className="bg-white rounded-xl shadow-sm">
-          {/* Modal */}
-
-          {/* Modal Overlay */}
-          {isModalOpen && selectedFood && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-2xl w-full mx-auto">
-                {/* Header */}
-                <div className="flex justify-between items-center bg-green-600 px-6 py-4">
-                  <h2 className="text-lg font-semibold text-white">
-                    Food & Donor Details
-                  </h2>
-                  <button
-                    onClick={() => setIsModalOpen(false)}
-                    className="text-white hover:text-gray-200"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-                {/* Body */}
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Image */}
-                  <div className="flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden h-48">
-                    {selectedFood.img ? (
-                      <>
-                        <img
-                          src={selectedFood.img}
-                          alt={selectedFood.title}
-                          className="object-cover w-full h-full"
-                        />
-                      </>
-                    ) : (
-                      <span className="text-gray-400">No Image Available</span>
-                    )}
-                  </div>
-                  {/* Details */}
-                  <div className="space-y-3">
-                    <div>
-                      <span className="font-semibold">Title:</span>{" "}
-                      {selectedFood.title}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Description:</span>{" "}
-                      {selectedFood.description}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Quantity:</span>{" "}
-                      {selectedFood.quantity} {selectedFood.quantity_unit}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Expiry:</span>{" "}
-                      {new Date(selectedFood.expiry_time).toLocaleString()}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Pickup Window:</span>{" "}
-                      {new Date(
-                        selectedFood.pickup_window_start
-                      ).toLocaleString()}{" "}
-                      -{" "}
-                      {new Date(selectedFood.pickup_window_end).toLocaleString()}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Status:</span>{" "}
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          selectedFood.status === "assigned"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {selectedFood.status}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="font-semibold">Accepted:</span>{" "}
-                      {new Date(selectedFood.acceptance_time).toLocaleString()}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Temperature:</span>{" "}
-                      {selectedFood.temperature_requirements}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Dietary Info:</span>{" "}
-                      {selectedFood.dietary_info}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Donor:</span>{" "}
-                      {selectedFood.donorId.name} ({selectedFood.donorId.email})
-                    </div>
-                    <div>
-                      <span className="font-semibold">Volunteer:</span>{" "}
-                      {selectedFood.volunteerId.name} ({selectedFood.volunteerId.email})
-                    </div>
-
-                    {/* // place the dropdown to assign the volunteer */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Assign Volunteer
-                      </label>
-                      <select
-                        value={selectedVolunteer}
-                        onChange={(e) => setSelectedVolunteer(e.target.value)}
-                        className="w-full border border-gray-200 rounded-lg py-2 px-3 focus:ring-2 focus:ring-green-500"
-                      >
-                        <option value="">Unassigned</option>
-                        {volunteers.map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.name}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => {handleAssignVolunteer(selectedFood._id, selectedVolunteer)}}
-                        className="mt-2 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-500 transition"
-                      >
-                        Assign
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="p-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <div className="flex-1 w-full md:w-auto">
-                <div className="relative">
-                  <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search claimed foods..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="relative">
-                <select
-                  value={foodStatusFilter}
-                  onChange={(e) =>
-                    setFoodStatusFilter(e.target.value as "all" | "assigned")
-                  }
-                  className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none"
+      <div className="bg-white rounded-xl shadow-sm">
+        {isModalOpen && selectedFood && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-2xl w-full mx-auto">
+              <div className="flex justify-between items-center bg-green-600 px-6 py-4">
+                <h2 className="text-lg font-semibold text-white">
+                  Food & Donor Details
+                </h2>
+                <button
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setSelectedVolunteer("");
+                  }}
+                  className="text-white hover:text-gray-200"
                 >
-                  <option value="all">All Status</option>
-                  <option value="assigned">Assigned</option>
-                </select>
-                <Filter className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden h-48">
+                  {selectedFood.img ? (
+                    <img
+                      src={selectedFood.img}
+                      alt={selectedFood.title}
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <span className="text-gray-400">No Image Available</span>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <span className="font-semibold">Title:</span>{" "}
+                    {selectedFood.title || "N/A"}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Description:</span>{" "}
+                    {selectedFood.description || "N/A"}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Quantity:</span>{" "}
+                    {selectedFood.quantity} {selectedFood.quantity_unit}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Expiry:</span>{" "}
+                    {new Date(selectedFood.expiry_time).toLocaleString()}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Pickup Window:</span>{" "}
+                    {new Date(selectedFood.pickup_window_start).toLocaleString()} -{" "}
+                    {new Date(selectedFood.pickup_window_end).toLocaleString()}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Status:</span>{" "}
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        selectedFood.status === "assigned"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {selectedFood.status}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold">Accepted:</span>{" "}
+                    {new Date(selectedFood.acceptance_time).toLocaleString()}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Temperature:</span>{" "}
+                    {selectedFood.temperature_requirements || "N/A"}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Dietary Info:</span>{" "}
+                    {selectedFood.dietary_info || "N/A"}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Donor:</span>{" "}
+                    {selectedFood.donorId?.name || "N/A"} ({selectedFood.donorId?.email || "N/A"})
+                  </div>
+                  <div>
+                    <span className="font-semibold">Volunteer:</span>{" "}
+                    {selectedFood.volunteerId?.name || "Unassigned"} (
+                    {selectedFood.volunteerId?.email || "N/A"})
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Assign Volunteer
+                    </label>
+                    <select
+                      value={selectedVolunteer}
+                      onChange={(e) => setSelectedVolunteer(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg py-2 px-3 focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="">Unassigned</option>
+                      {volunteers.map((v) => (
+                        <option key={v._id} value={v._id}>
+                          {v.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => {
+                        if (selectedVolunteer && selectedFood._id) {
+                          handleAssignVolunteer(selectedFood._id, selectedVolunteer);
+                        } else {
+                          toast.error("Please select a volunteer");
+                        }
+                      }}
+                      className="mt-2 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-500 transition"
+                    >
+                      Assign
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+           <div className="p-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div className="flex-1 w-full md:w-auto">
+              <div className="relative">
+                <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search claimed foods..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left border-b border-gray-100">
-                    <th className="pb-3 font-semibold text-gray-600">Title</th>
-                    <th className="pb-3 font-semibold text-gray-600">Quantity</th>
-                    <th className="pb-3 font-semibold text-gray-600">
-                      Description
-                    </th>
-                    <th className="pb-3 font-semibold text-gray-600">
-                      Expiry Time
-                    </th>
-                    <th className="pb-3 font-semibold text-gray-600">
-                      Pickup Window
-                    </th>
-                    <th className="pb-3 font-semibold text-gray-600">Status</th>
-                    <th className="pb-3 font-semibold text-gray-600">
-                      Acceptance Time
-                    </th>
-                    {/* eye button */}
-                    <th className="pb-3 font-semibold text-gray-600">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredClaimedFoods.length > 0 ? (
-                    filteredClaimedFoods.map((food) => (
-                      <tr
-                        key={food._id}
-                        className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
-                      >
-                        <td className="py-4">{food.title}</td>
-                        <td className="py-4">
-                          {food.quantity} {food.quantity_unit}
-                        </td>
-                        <td className="py-4">{food.description}</td>
-                        <td className="py-4">
-                          {new Date(food.expiry_time).toLocaleDateString()}
-                        </td>
-                        <td className="py-4">
-                          {new Date(food.pickup_window_start).toLocaleString()} -{" "}
-                          <br />
-                          {new Date(food.pickup_window_end).toLocaleString()}
-                        </td>
-                        <td className="py-4">
-                          <span
-                            className={`px-2 py-1 rounded-full text-sm font-medium ${
-                              food.status === "assigned"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-gray-100 text-gray-700"
-                            }`}
+            <div className="relative">
+              <select
+                value={foodStatusFilter}
+                onChange={(e) =>
+                  setFoodStatusFilter(e.target.value as "all" | "assigned")
+                }
+                className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none"
+              >
+                <option value="all">All Status</option>
+                <option value="assigned">Assigned</option>
+              </select>
+              <Filter className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left border-b border-gray-100">
+                  <th className="pb-3 font-semibold text-gray-600">Title</th>
+                  <th className="pb-3 font-semibold text-gray-600">Quantity</th>
+                  <th className="pb-3 font-semibold text-gray-600">Description</th>
+                  <th className="pb-3 font-semibold text-gray-600">Expiry Time</th>
+                  <th className="pb-3 font-semibold text-gray-600">Pickup Window</th>
+                  <th className="pb-3 font-semibold text-gray-600">Status</th>
+                  <th className="pb-3 font-semibold text-gray-600">Acceptance Time</th>
+                  <th className="pb-3 font-semibold text-gray-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredClaimedFoods.length > 0 ? (
+                  filteredClaimedFoods.map((food) => (
+                    <tr
+                      key={food._id}
+                      className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                    >
+                      <td className="py-4">{food.title}</td>
+                      <td className="py-4">{food.quantity} {food.quantity_unit}</td>
+                      <td className="py-4">{food.description}</td>
+                      <td className="py-4">{new Date(food.expiry_time).toLocaleDateString()}</td>
+                      <td className="py-4">
+                        {new Date(food.pickup_window_start).toLocaleString()} - <br />
+                        {new Date(food.pickup_window_end).toLocaleString()}
+                      </td>
+                      <td className="py-4">
+                        <span
+                          className={`px-2 py-1 rounded-full text-sm font-medium ${
+                            food.status === "assigned"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {food.status}
+                        </span>
+                      </td>
+                      <td className="py-4">{new Date(food.acceptance_time).toLocaleString()}</td>
+                      <td className="py-4">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => {
+                              setSelectedFood(food);
+                              setSelectedVolunteer(food.volunteerId?._id || "");
+                              setIsModalOpen(true);
+                            }}
+                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                            title="View food details"
                           >
-                            {food.status}
-                          </span>
-                        </td>
-                        <td className="py-4">
-                          {new Date(food.acceptance_time).toLocaleString()}
-                        </td>
-                        <td className="py-4">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => {
-                                setSelectedFood(food);
-                                setIsModalOpen(true);
-                              }}
-                              className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                              title="View food details"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() =>
-                                console.log("Delete claimed food:", food._id)
-                              }
-                              className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-                              title="Delete claimed food"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={8} className="py-4 text-center text-gray-500">
-                        No claimed foods found. Try adjusting your search or
-                        filters.
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClaimedFood(food._id)}
+                            className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete claimed food"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="py-4 text-center text-gray-500">
+                      No claimed foods found. Try adjusting your search or filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-      );
-    };
+      </div>
+    );
+  };
 
     const Dashboard = () => (
-      <>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <DashboardCard
-            icon={Users}
-            title="Total Volunteers"
-            stats={String(stats.totalVolunteers || 0)}
-            trend="+3 from last week"
-            trendUp={true}
-          />
-          <DashboardCard
-            icon={Package2}
-            title="Total Donations"
-            stats={String(stats.total_donations || 0)}
-            trend="+5 this month"
-            trendUp={true}
-          />
-          <DashboardCard
-            icon={DollarSign}
-            title="Pending Donations"
-            stats={String(stats.pendingDonations || 0)}
-            trend="+2 this month"
-            trendUp={true}
-          />
-        </div>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <DashboardCard
+          icon={Users}
+          title="Total Volunteers"
+          stats={String(stats.totalVolunteers || 0)}
+          trend="+3 from last week"
+          trendUp={true}
+        />
+        <DashboardCard
+          icon={Package2}
+          title="Total Donations"
+          stats={String(stats.total_donations || 0)}
+          trend="+5 this month"
+          trendUp={true}
+        />
+        <DashboardCard
+          icon={DollarSign}
+          title="Pending Donations"
+          stats={String(stats.pendingDonations || 0)}
+          trend="+2 this month"
+          trendUp={true}
+        />
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-4">Recent Activities</h2>
-            {recentActivities.length > 0 ? (
-              <div className="space-y-4">
-                {recentActivities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex justify-between items-center border-b border-gray-100 pb-4"
-                  >
-                    <div>
-                      <p className="font-semibold">{activity.description}</p>
-                      <p className="text-sm text-gray-600">
-                        By {activity.volunteerName}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">
-                        {new Date(activity.date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-gray-500 py-6">
-                No recent activities to display.
-              </p>
-            )}
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-xl font-semibold mb-4">Recent Activities</h2>
+          {recentActivities.length > 0 ? (
             <div className="space-y-4">
-              <QuickActionButton
-                label="View All Donations"
-                color="blue"
-                onClick={() => setActiveTab("donations")}
-              />
-              <QuickActionButton
-                label="Manage Volunteers"
-                color="green"
-                onClick={() => setActiveTab("volunteers")}
-              />
-              <QuickActionButton
-                label="View Claimed Foods"
-                color="purple"
-                onClick={() => setActiveTab("claimedFoods")}
-              />
+              {recentActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex justify-between items-center border-b border-gray-100 pb-4"
+                >
+                  <div>
+                    <p className="font-semibold">{activity.description}</p>
+                    <p className="text-sm text-gray-600">By {activity.volunteerName}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">{new Date(activity.date).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              ))}
             </div>
+          ) : (
+            <p className="text-center text-gray-500 py-6">No recent activities to display.</p>
+          )}
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+          <div className="space-y-4">
+            <QuickActionButton
+              label="View All Donations"
+              color="blue"
+              onClick={() => setActiveTab("donations")}
+            />
+            <QuickActionButton
+              label="Manage Volunteers"
+              color="green"
+              onClick={() => setActiveTab("volunteers")}
+            />
+            <QuickActionButton
+              label="View Claimed Foods"
+              color="purple"
+              onClick={() => setActiveTab("claimedFoods")}
+            />
           </div>
         </div>
-      </>
-    );
+      </div>
+    </>
+  );
 
-   return (
+  return (
     <div className="space-y-6 p-6">
       <Toaster />
       <div className="flex justify-between items-center">

@@ -3,6 +3,7 @@ import User from "../models/User";
 import Food from "../models/Food";
 import mongoose, { mongo } from "mongoose";
 import bcrypt from "bcrypt";
+import { sendVolunteerConfirmationEmail } from "../emails/sendVolunteerConfirmationEmail";
 
 // Dashboard stats for NGO
 export const getNgoStats = async (req: Request, res: Response) => {
@@ -260,6 +261,7 @@ export const updateVolunteer = async (req: Request, res: Response) => {
     });
   }
 };
+// Add volunteer (Updated to send confirmation email)
 export const addVolunteer = async (req: Request, res: Response) => {
   try {
     const { name, email, contact_number } = req.body;
@@ -282,21 +284,21 @@ export const addVolunteer = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: "Volunteer with this email already exists" });
     }
 
-    // Generate a default password (e.g., random string or temporary)
-    const defaultPassword = Math.random().toString(36).slice(-8); // Random 8-char password
-    // Password will be hashed by the UserSchema pre-save hook
+    // Generate a random password
+    const randomPassword = Math.random().toString(36).slice(-8);
+    const registeredTime = new Date();
 
     // Create new volunteer
     const volunteer = new User({
       name,
       email,
-      password: "password", 
+      password: randomPassword, // Will be hashed by pre-save hook
       contact_number,
       role: "volunteer",
       organization_name: ngo.organization_name,
       status: "Active",
       completedOrders: 0,
-      joinedDate: new Date(),
+      joinedDate: registeredTime,
       ngoId,
       isApproved: true,
       address: "",
@@ -304,16 +306,25 @@ export const addVolunteer = async (req: Request, res: Response) => {
 
     await volunteer.save();
 
+    // Send confirmation email
+    await sendVolunteerConfirmationEmail({
+      to: email,
+      name,
+      password: randomPassword,
+      organization_name: ngo.organization_name,
+      registered_time: registeredTime.toISOString(),
+    });
+
     // Return the saved volunteer (excluding password)
     const volunteerResponse = volunteer.toObject();
-    delete volunteerResponse.password; // Remove password from response
+    delete volunteerResponse.password;
     res.status(201).json(volunteerResponse);
   } catch (error) {
     console.error("Error adding volunteer:", error);
     res.status(500).json({
       success: false,
       message: "Failed to add volunteer",
-      error: error.message,
+      error: (error as Error).message,
     });
   }
 };
