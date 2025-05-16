@@ -183,26 +183,22 @@ export function NGOProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function addVolunteer(data: { name: string; email: string; contact_number: string }) {
-  try {
-    const token = localStorage.getItem("token");
-    console.log("Adding volunteer with data:", data);
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/ngo/volunteers`,
-      data,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
-      }
-    );
-    console.log("Add response:", response.data);
-    await getVolunteers(); // Refresh volunteers list
-  } catch (error: any) {
-    console.error("Failed to add volunteer:", error.response?.data || error.message);
-    throw error;
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/ngo/volunteers`,
+        data,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        }
+      );
+      setVolunteers((prev) => [...prev, response.data]);
+    } catch (error: any) {
+      console.error("Failed to add volunteer:", error.response?.data || error.message);
+      throw error;
+    }
   }
-}
 
 const updateFoodStatus = async (foodId: string, status: string) => {
   const token = localStorage.getItem("token");
