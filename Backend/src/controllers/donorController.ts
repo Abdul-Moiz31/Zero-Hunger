@@ -26,7 +26,6 @@ export const createDonation = async (req: Request, res: Response) => {
 
     // Image upload
     const url = req.file ? await uploadImage(req.file) : undefined
-console.log("HERE is the user "+ JSON.stringify(req.user))
     const food = await Food.create({
       donorId: req.user.id,
       title,
