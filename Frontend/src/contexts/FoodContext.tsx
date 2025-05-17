@@ -1,8 +1,7 @@
 // FoodContext.tsx - Updated with claimFood functionality
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
+import React, { createContext, useContext, useState } from 'react';
 interface Donor {
   _id: string;
   name: string;
@@ -131,6 +130,7 @@ export const FoodListingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setLoading(false);
     }
   };
+  
 
   const value = {
     listings,
