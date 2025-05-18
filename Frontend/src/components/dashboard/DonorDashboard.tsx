@@ -29,7 +29,6 @@ interface FoodListing {
   pickup_location?: string;
 }
 
-// Define form data interface
 interface FormData {
   title: string;
   description: string;
@@ -69,6 +68,7 @@ const DonationForm = ({
 }) => {
   const [formData, setFormData] = useState<DonationFields>(initialFormData);
   const [formErrors, setFormErrors] = useState<Partial<FormData>>({});
+
   const validateForm = () => {
     const errors: Partial<FormData> = {};
     const now = new Date();
@@ -124,7 +124,6 @@ const DonationForm = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-
     const data = new FormData();
     data.append("title", formData.title);
     data.append("description", formData.description);
@@ -135,20 +134,18 @@ const DonationForm = ({
     data.append("pickup_window_end", formData.pickup_window_end);
     data.append("temperature_requirements", formData.temperature_requirements);
     data.append("dietary_info", formData.dietary_info);
-    data.append("pickup_location", formData.pickup_location); 
-
+    data.append("pickup_location", formData.pickup_location);
     if (formData.img) {
       data.append("img", formData.img);
     }
-
     onSubmit(e, data);
     setFormData(initialFormData);
   };
 
- return (
+  return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-xl p-6 sm:p-8 w-full max-w-2xl animate-scaleIn overflow-y-auto max-h-[90vh]">
-        <div className="flex justify-between items-center mb-4 sm:mb-6">
+      <div className="bg-white rounded-xl p-4 sm:p-6 w-full max-w-lg sm:max-w-2xl animate-scaleIn overflow-y-auto max-h-[90vh]">
+        <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg sm:text-xl font-semibold">
             Create New Donation
           </h3>
@@ -160,8 +157,8 @@ const DonationForm = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Title */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -172,9 +169,9 @@ const DonationForm = ({
                 name="title"
                 value={formData.title}
                 onChange={handleFormChange}
-                className={`w-full p-2.5 border ${
+                className={`w-full p-2 border ${
                   formErrors.title ? "border-red-500" : "border-gray-300"
-                } rounded-lg text-sm`}
+                } rounded-lg text-sm sm:text-base`}
                 required
               />
               {formErrors.title && (
@@ -193,9 +190,9 @@ const DonationForm = ({
                   name="quantity"
                   value={formData.quantity}
                   onChange={handleFormChange}
-                  className={`flex-1 p-2.5 border ${
+                  className={`flex-1 p-2 border ${
                     formErrors.quantity ? "border-red-500" : "border-gray-300"
-                  } rounded-lg text-sm`}
+                  } rounded-lg text-sm sm:text-base`}
                   required
                   min="1"
                 />
@@ -203,9 +200,9 @@ const DonationForm = ({
                   name="quantity_unit"
                   value={formData.quantity_unit}
                   onChange={handleFormChange}
-                  className={`sm:w-32 w-full p-2.5 border ${
+                  className={`w-full sm:w-32 p-2 border ${
                     formErrors.quantity_unit ? "border-red-500" : "border-gray-300"
-                  } rounded-lg text-sm`}
+                  } rounded-lg text-sm sm:text-base`}
                 >
                   <option value="meals">Meals</option>
                   <option value="kg">Kilograms</option>
@@ -221,7 +218,7 @@ const DonationForm = ({
             </div>
 
             {/* Description */}
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Description
               </label>
@@ -229,9 +226,9 @@ const DonationForm = ({
                 name="description"
                 value={formData.description}
                 onChange={handleFormChange}
-                className={`w-full p-2.5 border ${
+                className={`w-full p-2 border ${
                   formErrors.description ? "border-red-500" : "border-gray-300"
-                } rounded-lg text-sm`}
+                } rounded-lg text-sm sm:text-base`}
                 rows={3}
                 required
               />
@@ -250,9 +247,9 @@ const DonationForm = ({
                 name="expiry_time"
                 value={formData.expiry_time}
                 onChange={handleFormChange}
-                className={`w-full p-2.5 border ${
+                className={`w-full p-2 border ${
                   formErrors.expiry_time ? "border-red-500" : "border-gray-300"
-                } rounded-lg text-sm`}
+                } rounded-lg text-sm sm:text-base`}
                 required
                 min={new Date().toISOString().slice(0, 16)}
               />
@@ -270,7 +267,7 @@ const DonationForm = ({
                 name="temperature_requirements"
                 value={formData.temperature_requirements}
                 onChange={handleFormChange}
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                className="w-full p-2 border border-gray-300 rounded-lg text-sm sm:text-base"
               />
             </div>
 
@@ -283,9 +280,9 @@ const DonationForm = ({
                 name="pickup_window_start"
                 value={formData.pickup_window_start}
                 onChange={handleFormChange}
-                className={`w-full p-2.5 border ${
+                className={`w-full p-2 border ${
                   formErrors.pickup_window_start ? "border-red-500" : "border-gray-300"
-                } rounded-lg text-sm`}
+                } rounded-lg text-sm sm:text-base`}
                 required
                 min={new Date().toISOString().slice(0, 16)}
               />
@@ -303,9 +300,9 @@ const DonationForm = ({
                 name="pickup_window_end"
                 value={formData.pickup_window_end}
                 onChange={handleFormChange}
-                className={`w-full p-2.5 border ${
+                className={`w-full p-2 border ${
                   formErrors.pickup_window_end ? "border-red-500" : "border-gray-300"
-                } rounded-lg text-sm`}
+                } rounded-lg text-sm sm:text-base`}
                 required
                 min={formData.pickup_window_start || new Date().toISOString().slice(0, 16)}
               />
@@ -315,7 +312,7 @@ const DonationForm = ({
             </div>
 
             {/* Dietary Info */}
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Dietary Information
               </label>
@@ -324,12 +321,12 @@ const DonationForm = ({
                 name="dietary_info"
                 value={formData.dietary_info}
                 onChange={handleFormChange}
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                className="w-full p-2 border border-gray-300 rounded-lg text-sm sm:text-base"
               />
             </div>
 
             {/* Pickup Location */}
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Pickup Location
               </label>
@@ -338,9 +335,9 @@ const DonationForm = ({
                 name="pickup_location"
                 value={formData.pickup_location}
                 onChange={handleFormChange}
-                className={`w-full p-2.5 border ${
+                className={`w-full p-2 border ${
                   formErrors.pickup_location ? "border-red-500" : "border-gray-300"
-                } rounded-lg text-sm`}
+                } rounded-lg text-sm sm:text-base`}
                 required
               />
               {formErrors.pickup_location && (
@@ -349,7 +346,7 @@ const DonationForm = ({
             </div>
 
             {/* File Upload */}
-            <div>
+            <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Upload Image
               </label>
@@ -357,23 +354,23 @@ const DonationForm = ({
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
-                className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                className="w-full p-2 border border-gray-300 rounded-lg text-sm sm:text-base"
               />
             </div>
           </div>
 
           {/* Buttons */}
-          <div className="flex flex-col sm:flex-row sm:justify-end sm:space-x-4 space-y-3 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row sm:justify-end sm:space-x-3 space-y-3 sm:space-y-0">
             <button
               type="button"
               onClick={onClose}
-              className="w-full sm:w-auto px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+              className="w-full sm:w-auto px-3 sm:px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm sm:text-base"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+              className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm sm:text-base"
             >
               Create Donation
             </button>
@@ -387,7 +384,6 @@ const DonationForm = ({
 const DonorDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [showDonationForm, setShowDonationForm] = useState(false);
-  // const [donations, setDonations] = useState<FoodListing[]>([]);
   const statusOptions = ["available", "assigned", "completed"];
   const [isLoading, setIsLoading] = useState(false);
 
@@ -474,8 +470,8 @@ const DonorDashboard = () => {
   }, []);
 
   const Overview = () => (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <DashboardCard
           icon={Package2}
           title="Total Donations"
@@ -499,63 +495,61 @@ const DonorDashboard = () => {
         />
       </div>
 
-      <div className="w-full mb-8">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-            Recent Donations
-          </h2>
-          <div className="space-y-5">
-            {donations.slice(0, 10).map((donation) => (
-              <div
-                key={donation._id}
-                className="flex items-start justify-between border-b pb-4 last:border-b-0"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="bg-green-100 p-2 rounded-xl">
-                    <Package2 className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-800">{donation.title}</h3>
-                    <p className="text-sm text-gray-500">
-                      {donation.quantity} {donation.quantity_unit || "items"}
-                    </p>
-                    <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
-                      <span className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        {new Date(donation.pickup_window_start).toLocaleDateString()}
-                      </span>
-                      <span className="flex items-center">
-                        <Clock3 className="w-4 h-4 mr-1" />
-                        {new Date(donation.pickup_window_start).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
+      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6">
+          Recent Donations
+        </h2>
+        <div className="space-y-4">
+          {donations.slice(0, 10).map((donation) => (
+            <div
+              key={donation._id}
+              className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b pb-4 last:border-b-0 gap-4"
+            >
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="bg-green-100 p-2 rounded-lg">
+                  <Package2 className="w-4 sm:w-5 h-4 sm:h-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800 text-sm sm:text-base">{donation.title}</h3>
+                  <p className="text-xs sm:text-sm text-gray-500">
+                    {donation.quantity} {donation.quantity_unit || "items"}
+                  </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400 mt-1">
+                    <span className="flex items-center">
+                      <Calendar className="w-3 sm:w-4 h-3 sm:h-4 mr-1" />
+                      {new Date(donation.pickup_window_start).toLocaleDateString()}
+                    </span>
+                    <span className="flex items-center">
+                      <Clock3 className="w-3 sm:w-4 h-3 sm:h-4 mr-1" />
+                      {new Date(donation.pickup_window_start).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   </div>
                 </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${
-                    donation.status === "available"
-                      ? "bg-green-100 text-green-700"
-                      : donation.status === "assigned"
-                      ? "bg-blue-100 text-blue-700"
-                      : donation.status === "completed"
-                      ? "bg-gray-200 text-gray-700"
-                      : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {donation.status.charAt(0).toUpperCase() + donation.status.slice(1)}
-                </span>
               </div>
-            ))}
-            {donations.length === 0 && (
-              <p className="text-gray-500 text-center py-4">No recent donations available.</p>
-            )}
-          </div>
+              <span
+                className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap ${
+                  donation.status === "available"
+                    ? "bg-green-100 text-green-700"
+                    : donation.status === "assigned"
+                    ? "bg-blue-100 text-blue-700"
+                    : donation.status === "completed"
+                    ? "bg-gray-200 text-gray-700"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
+                {donation.status.charAt(0).toUpperCase() + donation.status.slice(1)}
+              </span>
+            </div>
+          ))}
+          {donations.length === 0 && (
+            <p className="text-gray-500 text-center py-4 text-sm sm:text-base">No recent donations available.</p>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 
   const DonationsList = useCallback(() => {
@@ -567,29 +561,29 @@ const DonorDashboard = () => {
     };
 
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">All Donations</h2>
+      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800">All Donations</h2>
           <button
             onClick={() => setShowDonationForm(true)}
-            className="bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition duration-300 shadow-sm"
+            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-medium px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition duration-300 text-sm sm:text-base"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 sm:w-5 h-4 sm:h-5" />
             <span>New Donation</span>
           </button>
         </div>
 
         <div className="overflow-x-auto rounded-lg border border-gray-200">
-          <table className="min-w-full bg-white text-sm text-gray-700">
+          <table className="min-w-[640px] w-full bg-white text-sm text-gray-700">
             <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
               <tr>
-                <th className="p-4 text-left">Title</th>
-                <th className="p-4 text-left">Quantity</th>
-                <th className="p-4 text-left">Pickup Window</th>
-                <th className="p-4 text-left">Expiry Time</th>
-                <th className="p-4 text-left">Pickup Location</th>
-                <th className="p-4 text-left">Status</th>
-                <th className="p-4 text-left">Actions</th>
+                <th className="p-3 sm:p-4 text-left">Title</th>
+                <th className="p-3 sm:p-4 text-left">Quantity</th>
+                <th className="p-3 sm:p-4 text-left">Pickup Window</th>
+                <th className="p-3 sm:p-4 text-left">Expiry Time</th>
+                <th className="p-3 sm:p-4 text-left">Pickup Location</th>
+                <th className="p-3 sm:p-4 text-left">Status</th>
+                <th className="p-3 sm:p-4 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -598,24 +592,24 @@ const DonorDashboard = () => {
                   key={donation._id}
                   className="border-t hover:bg-gray-50 transition duration-200"
                 >
-                  <td className="px-4 py-3">{donation.title}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">{donation.title}</td>
+                  <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
                     {donation.quantity} {donation.quantity_unit || "items"}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
                     {`${new Date(donation.pickup_window_start).toLocaleString()} - ${new Date(
                       donation.pickup_window_end
                     ).toLocaleString()}`}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
                     {new Date(donation.expiry_time).toLocaleString()}
                   </td>
-                  <td className="px-4 py-3">{donation.pickup_location}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">{donation.pickup_location}</td>
+                  <td className="px-3 sm:px-4 py-2 sm:py-3">
                     <select
                       value={donation.status}
                       onChange={(e) => handleStatusChange(donation._id, e.target.value)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold ${
                         donation.status === "cancelled"
                           ? "bg-red-100 text-red-700"
                           : donation.status === "completed"
@@ -632,20 +626,20 @@ const DonorDashboard = () => {
                       ))}
                     </select>
                   </td>
-                  <td className="px-4 py-3 flex items-center gap-3">
+                  <td className="px-3 sm:px-4 py-2 sm:py-3">
                     <button
                       onClick={() => deleteDonation(donation._id)}
                       className="text-red-600 hover:text-red-800 transition"
                       title="Delete"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="w-4 sm:w-5 h-4 sm:h-5" />
                     </button>
                   </td>
                 </tr>
               ))}
               {donations.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-3 text-center text-gray-500">
+                  <td colSpan={7} className="px-3 sm:px-4 py-2 sm:py-3 text-center text-gray-500 text-sm sm:text-base">
                     No donations available.
                   </td>
                 </tr>
@@ -660,33 +654,33 @@ const DonorDashboard = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        <div className="animate-spin rounded-full h-10 sm:h-12 w-10 sm:w-12 border-b-2 border-green-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <Toaster />
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">Donor Dashboard</h1>
-        <div className="flex space-x-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Donor Dashboard</h1>
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab("overview")}
-            className={`px-4 py-2 rounded-lg font-medium transition duration-300 ${
+            className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition duration-300 text-sm sm:text-base ${
               activeTab === "overview"
                 ? "bg-green-600 text-white"
-                : "text-gray-600 hover:bg-gray-100"
+                : "text-gray-600 hover:bg-gray-300"
             }`}
           >
             Overview
           </button>
           <button
             onClick={() => setActiveTab("donations")}
-            className={`px-4 py-2 rounded-lg font-medium transition duration-300 ${
+            className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition duration-300 text-sm sm:text-base ${
               activeTab === "donations"
                 ? "bg-green-600 text-white"
-                : "text-gray-600 hover:bg-gray-100"
+                : "text-gray-600 hover:bg-gray-300"
             }`}
           >
             My Donations
@@ -694,7 +688,7 @@ const DonorDashboard = () => {
         </div>
       </div>
 
-       {activeTab === "overview" ? <Overview /> : <DonationsList />}
+      {activeTab === "overview" ? <Overview /> : <DonationsList />}
       {showDonationForm && (
         <DonationForm
           onClose={() => setShowDonationForm(false)}
@@ -719,27 +713,27 @@ const DashboardCard = ({
   trend: string;
   trendUp: boolean;
 }) => (
-  <div className="bg-white rounded-xl shadow-sm p-6">
-    <div className="flex items-center space-x-3 mb-6">
-      <div className="bg-green-100 p-3 rounded-lg">
-        <Icon className="w-6 h-6 text-green-600" />
+  <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+    <div className="flex items-center space-x-3 mb-4 sm:mb-6">
+      <div className="bg-green-100 p-2 sm:p-3 rounded-lg">
+        <Icon className="w-5 sm:w-6 h-5 sm:h-6 text-green-600" />
       </div>
-      <h3 className="text-lg font-semibold">{title}</h3>
+      <h3 className="text-base sm:text-lg font-semibold text-gray-800">{title}</h3>
     </div>
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {stats.length > 0 ? (
         stats.map((stat) => (
           <div key={stat.label} className="flex justify-between items-center">
-            <span className="text-gray-600">{stat.label}</span>
-            <span className="font-semibold">{stat.value}</span>
+            <span className="text-gray-600 text-sm sm:text-base">{stat.label}</span>
+            <span className="font-semibold text-sm sm:text-base">{stat.value}</span>
           </div>
         ))
       ) : (
-        <p className="text-gray-500">No stats available</p>
+        <p className="text-gray-500 text-sm sm:text-base">No stats available</p>
       )}
       {trend && (
         <p
-          className={`text-sm ${trendUp ? "text-green-600" : "text-gray-600"}`}
+          className={`text-xs sm:text-sm ${trendUp ? "text-green-600" : "text-gray-600"}`}
         >
           {trend}
         </p>

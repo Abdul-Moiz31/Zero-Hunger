@@ -153,7 +153,7 @@ export const getOwnUser = async (req: Request, res: Response) => {
   }
 };
 
-export const getOrgsNames=async(req,res)=>{
+export const getOrgsNames=async(req: Request,res : Response)=>{
 
   const orgs=await User.find({role:"ngo"}).select("organization_name");
 
