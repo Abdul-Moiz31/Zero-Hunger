@@ -158,7 +158,7 @@ const Header = () => {
                  {user ? (
                   <>
                     <button 
-                      onClick={() => navigate('/dashboard')}
+                      onClick={() => navigate(`/${user.role}-dashboard`)}
                       className="w-full bg-green-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-green-500 transition-all duration-300"
                     >
                       Dashboard
