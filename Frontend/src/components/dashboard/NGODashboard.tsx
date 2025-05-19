@@ -3,7 +3,6 @@
   import {
     Users,
     Package2,
-    MapPin,
     Plus,
     Pencil,
     Trash2,
@@ -17,16 +16,17 @@
   
 
   // Use interfaces from the NGO context
-  interface Volunteer {
-    id: string;
-    name: string;
-    email: string;
-    contact_number: string;
-    address: string;
-    completedOrders: number;
-    status: "Active" | "Inactive";
-    joinedDate: string;
-  }
+ interface Volunteer {
+  _id: string;
+  title : string;
+  email: string;
+  contact_number: string;
+  address: string;
+  completedOrders: number;
+  status: "Active" | "Inactive";
+  joinedDate: string;
+  organization_name: string; // Added
+}
   interface Volunteer {
   _id: string;
   name: string;
@@ -49,16 +49,17 @@ interface VolunteerFormProps {
     assignedVolunteer: string | null;
   }
 
-  interface Activity {
-    id: string;
-    description: string;
-    date: string;
-    volunteerName: string;
-  }
+ interface Activity {
+  id: string;
+  description: string;
+  date: string;
+  volunteerName: string | null; // Make nullable for claimed foods
+  organizationName?: string; // Added for organization name
+}
 
-  interface Food {
+ interface Food {
   _id: string;
-  title: string;
+  title: string; // Changed from title to name
   quantity: number;
   quantity_unit: string;
   description: string;
@@ -146,6 +147,51 @@ interface VolunteerFormProps {
       getVolunteers();
       getClaimedFoods();
     }, []);
+
+    useEffect(() => {
+  const activities: Activity[] = [];
+
+  // Volunteer registrations
+  volunteers.forEach((volunteer) => {
+    activities.push({
+      id: `volunteer-${volunteer._id}`,
+      description: `New volunteer ${volunteer.name} registered with the organization`,
+      date: volunteer.joinedDate,
+      volunteerName: volunteer.name,
+      organizationName: volunteer.organization_name, // Assuming this field exists
+    });
+  });
+
+  // Claimed food donations
+  claimedFoods.forEach((food) => {
+    activities.push({
+      id: `claimed-${food._id}`,
+      description: `Food donation "${food.title || 'Unnamed Donation'}" claimed`,
+      date: food.acceptance_time,
+      volunteerName: null,
+      organizationName: undefined, // No organization for claimed food
+    });
+
+    // Assigned donations
+    if (food.volunteerId) {
+      const assignedVolunteer = volunteers.find(v => v._id === food.volunteerId._id);
+      activities.push({
+        id: `assigned-${food._id}`,
+        description: `Food donation "${food.title || 'Unnamed Donation'}" assigned to  ${food.volunteerId.name}`, 
+        date: food.acceptance_time,
+        volunteerName: food.volunteerId,
+        organizationName: assignedVolunteer?.organization_name, 
+      });
+    }
+  });
+
+  // Sort by date (descending) and limit to 9
+  const sortedActivities = activities
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 9);
+
+  setRecentActivities(sortedActivities);
+}, [volunteers, claimedFoods]);
 
     const handleAddVolunteer = async (data: { name: string; email: string; contact_number: string }, id?: string) => {
     try {
@@ -573,7 +619,7 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
             <select
               value={foodStatusFilter}
               onChange={(e) =>
-                setFoodStatusFilter(e.target.value as "all" | "Pending" | "Completed" | "Cancelled" | "assigned")
+                setDonationStatusFilter(e.target.value as "all" | "Pending" | "Completed" | "Cancelled" )
               }
               className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none"
             >
@@ -936,21 +982,25 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
           <h2 className="text-xl font-semibold mb-4">Recent Activities</h2>
           {recentActivities.length > 0 ? (
             <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex justify-between items-center border-b border-gray-100 pb-4"
-                >
-                  <div>
-                    <p className="font-semibold">{activity.description}</p>
-                    <p className="text-sm text-gray-600">By {activity.volunteerName}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600">{new Date(activity.date).toLocaleDateString()}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+  {recentActivities.map((activity) => (
+    <div
+      key={activity.id}
+      className="flex justify-between items-center border-b border-gray-100 pb-4"
+    >
+      <div>
+        <p className="font-semibold">{activity.description}</p>
+        <p className="text-sm text-gray-600">
+          {activity.volunteerName
+            ? `By ${activity.organizationName ? ` ${activity.organizationName}` : ''}`
+            : 'By System'}
+        </p>
+      </div>
+      <div className="text-right">
+        <p className="text-sm text-gray-600">{new Date(activity.date).toLocaleDateString()}</p>
+      </div>
+    </div>
+  ))}
+</div>
           ) : (
             <p className="text-center text-gray-500 py-6">No recent activities to display.</p>
           )}
