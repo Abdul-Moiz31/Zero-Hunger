@@ -7,9 +7,27 @@ export const addFood = async (req: any, res: Response) => {
   res.status(201).json(food);
 };
 
+// Alternative implementation with even more precise filtering
 export const getAvailableFoods = async (_req: Request, res: Response) => {
-  const foods = await Food.find({ status: 'available' });
-  res.json(foods);
+  try {
+    // Find foods that are available and either have no ngoId field or it's null/undefined
+    const foods = await Food.find({
+      status: 'available',
+      $or: [
+        { ngoId: { $exists: false } },  // ngoId field doesn't exist
+        { ngoId: null }                 // ngoId is null
+      ]
+    }).populate('donorId', 'name'); // Optionally populate donor information
+    
+    res.status(200).json(foods);
+  } catch (error) {
+    console.error('Error fetching available foods:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch available foods', 
+      error: error.message 
+    });
+  }
 };
 
 export const acceptFood = async (req: any, res: Response) => {

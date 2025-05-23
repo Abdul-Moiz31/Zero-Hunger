@@ -24,6 +24,7 @@ import { AdminProvider } from './contexts/AdminContext';
 import { DonorProvider } from './contexts/donorContext';
 import { NGOProvider } from './contexts/ngoContext';
 import { VolunteerProvider } from  './contexts/volunteerContext';
+import { FoodListingsProvider } from './contexts/FoodContext';
 
 const HomePage = () => (
   <div className="min-h-screen">
@@ -48,6 +49,8 @@ function App() {
       <NGOProvider>
         <DonorProvider>
         <AdminProvider>
+          <FoodListingsProvider>
+
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
@@ -67,7 +70,7 @@ function App() {
                 </DashboardLayout>
               </PrivateRoute>
             }
-          />
+            />
           <Route
             path="/donor-dashboard/*"
             element={
@@ -77,7 +80,7 @@ function App() {
                 </DashboardLayout>
               </PrivateRoute>
             }
-          />
+            />
           <Route
             path="/ngo-dashboard/*"
             element={
@@ -87,7 +90,7 @@ function App() {
                 </DashboardLayout>
               </PrivateRoute>
             }
-          />
+            />
           <Route
             path="/volunteer-dashboard/*"
             element={
@@ -97,11 +100,12 @@ function App() {
                 </DashboardLayout>
               </PrivateRoute>
             }
-          />
+            />
 
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+            </FoodListingsProvider>
         </AdminProvider>
         </DonorProvider>
         </NGOProvider>

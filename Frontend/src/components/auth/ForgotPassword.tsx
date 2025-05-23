@@ -28,9 +28,9 @@ const ForgotPassword = () => {
       }
 
       setIsSubmitted(true);
-    } catch (err: unknown ) {
+    } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setError(err.message === 'User not found' ? 'No account found with this email.' : err.message);
       } else {
         setError('An unknown error occurred.');
       }
@@ -46,7 +46,10 @@ const ForgotPassword = () => {
           <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Check Your Email</h2>
             <p className="text-gray-600">
-              We've sent password reset instructions to <strong>{email}</strong>
+              We've sent password reset instructions to <strong>{email}</strong>.
+            </p>
+            <p className="text-gray-500 text-sm mt-2">
+              If you don’t see the email, check your spam or junk folder.
             </p>
           </div>
           <div className="mt-6">
