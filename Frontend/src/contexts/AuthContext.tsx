@@ -1,7 +1,21 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import type { User } from '@/types/auth';
+// import type { User } from '@/types/auth';
+
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: 'donor' | 'ngo' | 'volunteer' | 'admin';
+  organization_name?: string;
+  contact_number?: string;
+  status?: 'Active' | 'Inactive';
+  completedOrders?: number;
+  joinedDate?: Date;
+  isApproved?: boolean;
+  ngoId?: string;
+}
 
 interface Org {
   _id: string;
@@ -19,6 +33,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<AuthResponse>;
   signOut: () => void;
   orgNames: Org[];
+  updateProfile: (data: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -91,9 +106,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('token');
     navigate('/login');
   };
-
+ const updateProfile = async (data: Partial<User>) => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No token found in localStorage');
+      throw new Error('No token found');
+    }
+    console.log('Sending update profile request with token:', token);
+    const response = await axios.put(
+      `${import.meta.env.VITE_API_BASE_URL}/auth/update-profile`,
+      data,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setUser(response.data.user);
+    localStorage.setItem('user', JSON.stringify(response.data.user));
+  } catch (error: any) {
+    console.error('Update profile failed:', error);
+    throw new Error(error.response?.data?.message || 'Failed to update profile');
+  }
+};
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signOut, orgNames }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signOut, orgNames , updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

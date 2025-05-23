@@ -143,8 +143,15 @@ export const resetPassword = async (req: Request, res: Response) => {
 
 export const getOwnUser = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById(req.user._id).select("-password");
-    if (!user) return res.status(404).json({ message: "User not found" });
+    console.log('getOwnUser - req.user:', req.user);
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      console.log('User not found in database for ID:', req.user.id);
+      return res.status(404).json({ message: "User not found" });
+    }
 
     res.status(200).json({ user });
   } catch (error) {
@@ -159,3 +166,38 @@ export const getOrgsNames=async(req: Request,res : Response)=>{
 
   res.json(orgs)
 }
+export const updateProfile = async (req: Request, res: Response) => {
+  // console.log('Received update profile request:', req.body, 'User:', req.user);
+  try {
+    const { name, organization_name, contact_number } = req.body;
+    const user = await User.findById(req.user.id); // Changed from req.user._id to req.user.id to match token payload
+
+    if (!user) {
+      console.log('User not found in updateProfile for ID:', req.user.id);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (name) user.name = name;
+    if (organization_name !== undefined) user.organization_name = organization_name;
+    if (contact_number !== undefined) user.contact_number = contact_number;
+
+    if ((user.role === 'ngo' || user.role === 'volunteer') && (!user.organization_name || !user.contact_number)) {
+      return res.status(400).json({ message: 'Organization name and contact number are required for NGO or volunteer' });
+    }
+
+    await user.save();
+    res.status(200).json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        organization_name: user.organization_name,
+        contact_number: user.contact_number,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Something went wrong during profile update' });
+  }
+};

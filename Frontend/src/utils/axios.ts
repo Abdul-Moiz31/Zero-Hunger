@@ -57,7 +57,7 @@ axiosInstance.interceptors.response.use(
       
       // Without refresh token logic, simply clear the token and redirect to login
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      window.location.href = '/';
     }
     
     return Promise.reject(error);
