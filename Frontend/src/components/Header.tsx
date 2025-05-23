@@ -33,7 +33,7 @@ const Header = () => {
         setActiveSection(current || '');
       }
     };
-    
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isHomePage]);
@@ -49,14 +49,9 @@ const Header = () => {
 
   const UserMenu = () => (
     <div className="relative">
-      <button
-        onClick={() => setShowUserMenu(!showUserMenu)}
-        className="flex items-center space-x-2 focus:outline-none"
-      >
+      <button onClick={() => setShowUserMenu(!showUserMenu)} className="flex items-center space-x-2 focus:outline-none">
         <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-          <span className="text-lg font-semibold text-green-600">
-            {user?.name?.charAt(0) || ''}
-          </span>
+          <span className="text-lg font-semibold text-green-600">{user?.name?.charAt(0) || ''}</span>
         </div>
         <ChevronDown className={`w-4 h-4 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
       </button>
@@ -68,10 +63,10 @@ const Header = () => {
             <p className="text-sm text-gray-600">{user?.email || ''}</p>
           </div>
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(`/${user.role}-dashboard`)}
             className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
           >
-            Dashboard
+            Dashboard 
           </button>
           <button
             onClick={handleSignOut}
@@ -124,17 +119,14 @@ const Header = () => {
               {isHomePage && (
                 <>
                   <NavLink href="#about" isScrolled={isScrolled} isActive={activeSection === 'about'}>About Us</NavLink>
-                  <NavLink href="#how-it-works" isScrolled={isScrolled} isActive={activeSection === 'how-it-works'}>How It Works</NavLink>
                   <NavLink href="#impact" isScrolled={isScrolled} isActive={activeSection === 'impact'}>Our Impact</NavLink>
+                  <NavLink href="#how-it-works" isScrolled={isScrolled} isActive={activeSection === 'how-it-works'}>How It Works</NavLink>
                   <NavLink href="#partners" isScrolled={isScrolled} isActive={activeSection === 'partners'}>Partners</NavLink>
                   <NavLink href="#testimonials" isScrolled={isScrolled} isActive={activeSection === 'testimonials'}>Testimonials</NavLink>
                   <NavLink href="#contact" isScrolled={isScrolled} isActive={activeSection === 'contact'}>Contact</NavLink>
                 </>
               )}
-              
-              {user ? (
-                <UserMenu />
-              ) : (
+              {user ? <UserMenu /> : (
                 <button 
                   onClick={() => navigate('/auth')} 
                   className={`px-6 py-2.5 rounded-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 hover:shadow-lg ${
@@ -152,21 +144,21 @@ const Header = () => {
           {isMenuOpen && (
             <div className="md:hidden mt-4 pb-4 animate-fadeIn">
               <div className="flex flex-col space-y-4">
-                <MobileNavLink href="/listings" isScrolled={isScrolled || !isHomePage}>Listings</MobileNavLink>
+                <MobileNavLink href="/listings" isScrolled={isScrolled || !isHomePage} setIsMenuOpen={setIsMenuOpen}>Listings</MobileNavLink>
                 {isHomePage && (
                   <>
-                    <MobileNavLink href="#about" isScrolled={isScrolled}>About Us</MobileNavLink>
-                    <MobileNavLink href="#how-it-works" isScrolled={isScrolled}>How It Works</MobileNavLink>
-                    <MobileNavLink href="#impact" isScrolled={isScrolled}>Our Impact</MobileNavLink>
-                    <MobileNavLink href="#partners" isScrolled={isScrolled}>Partners</MobileNavLink>
-                    <MobileNavLink href="#testimonials" isScrolled={isScrolled}>Testimonials</MobileNavLink>
-                    <MobileNavLink href="#contact" isScrolled={isScrolled}>Contact</MobileNavLink>
+                    <MobileNavLink href="#about" isScrolled={isScrolled} setIsMenuOpen={setIsMenuOpen}>About Us</MobileNavLink>
+                    <MobileNavLink href="#impact" isScrolled={isScrolled} setIsMenuOpen={setIsMenuOpen}>Our Impact</MobileNavLink>
+                    <MobileNavLink href="#how-it-works" isScrolled={isScrolled} setIsMenuOpen={setIsMenuOpen}>How It Works</MobileNavLink>
+                    <MobileNavLink href="#partners" isScrolled={isScrolled} setIsMenuOpen={setIsMenuOpen}>Partners</MobileNavLink>
+                    <MobileNavLink href="#testimonials" isScrolled={isScrolled} setIsMenuOpen={setIsMenuOpen}>Testimonials</MobileNavLink>
+                    <MobileNavLink href="#contact" isScrolled={isScrolled} setIsMenuOpen={setIsMenuOpen}>Contact</MobileNavLink>
                   </>
                 )}
-                {user ? (
+                 {user ? (
                   <>
                     <button 
-                      onClick={() => navigate('/dashboard')}
+                      onClick={() => navigate(`/${user.role}-dashboard`)}
                       className="w-full bg-green-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-green-500 transition-all duration-300"
                     >
                       Dashboard
@@ -191,8 +183,9 @@ const Header = () => {
           )}
         </nav>
       </header>
+      {/* {showWelcomePopup && <WelcomePopup onClose={() => setShowWelcomePopup(false)} />} */}
       
-      {isHomePage && (
+      {isHomePage && showWelcomePopup && (
         <div className="relative min-h-screen">
           <div className="absolute inset-0">
             <div 
@@ -329,7 +322,7 @@ const NavLink = ({
   );
 };
 
-const MobileNavLink = ({ href, children, isScrolled }: { href: string; children: React.ReactNode; isScrolled: boolean }) => {
+const MobileNavLink = ({ href, children, isScrolled, setIsMenuOpen }: { href: string; children: React.ReactNode; isScrolled: boolean; setIsMenuOpen: React.Dispatch<React.SetStateAction<boolean>> }) => {
   const navigate = useNavigate();
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -361,6 +354,7 @@ const StatsCard = ({
   description,
   delay 
 }: { 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: any;
   number: string;
   label: string;

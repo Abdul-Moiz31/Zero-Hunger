@@ -3,7 +3,7 @@ import User from "../models/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { sendConfirmationEmail } from "../emails/sendConfirmationEmail";
-import sendResetPasswordEmail from "../emails/sendResetPasswordEmail";
+import { sendResetPasswordEmail, sendPasswordResetConfirmation } from "../emails/sendResetPasswordEmail";
 import crypto from "crypto";
 
 export const register = async (req: Request, res: Response) => {
@@ -26,14 +26,11 @@ export const register = async (req: Request, res: Response) => {
         .json({ message: "User already exists with this email" });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     // Base user payload
     const userPayload: any = {
       name,
       email,
-      password: hashedPassword,
+      password, // Password will be hashed by pre-save hook
       role, 
       organization_name,
       contact_number,
@@ -64,13 +61,7 @@ export const login = async (req: Request, res: Response) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!user.password) {
-      return res.status(500).json({ message: "User password is missing" });
-    }
-
-    const hashedPassword = user.password;
-    const isMatch = await bcrypt.compare(password, hashedPassword);
-
+    const isMatch = await user.comparePassword(password);
     if (!isMatch)
       return res.status(401).json({ message: "Invalid credentials" });
 
@@ -80,11 +71,11 @@ export const login = async (req: Request, res: Response) => {
       { expiresIn: "7d" }
     );
     // Set the token in a secure, httpOnly cookie
-    res.cookie('token', token, {
-      httpOnly: true,  
-      secure: process.env.NODE_ENV === 'production',  
-      maxAge: 3600000,  
-    
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Use HTTPS in prod
+      sameSite: "none", // Crucial for localhost cross-origin cookies
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     res.status(200).json({ token, user });
@@ -101,29 +92,21 @@ export const forgotPassword = async (req: Request, res: Response) => {
     if (!user)
       return res.status(404).json({ message: "No user with that email" });
 
+    // Generate and hash reset token
     const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const expiry = Date.now() + 3600000; // 1 hour
 
-    user.resetPasswordToken = token;
+    user.resetPasswordToken = tokenHash;
     user.resetPasswordExpires = new Date(expiry);
     await user.save();
 
-    const link = `http://localhost:5000/api/auth/reset-password/${token}`;
+    const link = `${process.env.FRONTEND_URL}/reset-password/${token}`;
     await sendResetPasswordEmail(email, link);
 
-    res.status(200).json({
-      message: 'Logged in successfully',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  
     res.json({ message: "Password reset link sent to your email" });
   } catch (err) {
-    console.error(err);
+    console.error('Forgot password error:', err);
     res.status(500).json({ message: "Something went wrong" });
   }
 };
@@ -133,36 +116,88 @@ export const resetPassword = async (req: Request, res: Response) => {
   const { password } = req.body;
 
   try {
+    // Hash the incoming token
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
     const user = await User.findOne({
-      resetPasswordToken: token,
+      resetPasswordToken: tokenHash,
       resetPasswordExpires: { $gt: new Date() },
     });
 
     if (!user)
       return res.status(400).json({ message: "Invalid or expired token" });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    user.password = hashedPassword;
+    user.password = password; // Will be hashed by pre-save hook
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
-
     await user.save();
+
+    await sendPasswordResetConfirmation(user.email);
+
     res.json({ message: "Password has been reset successfully" });
   } catch (err) {
-    console.error(err);
+    console.error('Reset password error:', err);
     res.status(500).json({ message: "Something went wrong" });
   }
 };
 
-
 export const getOwnUser = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById(req.user._id).select("-password");
-    if (!user) return res.status(404).json({ message: "User not found" });
+    console.log('getOwnUser - req.user:', req.user);
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      console.log('User not found in database for ID:', req.user.id);
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    res.status(200).json({user});
+    res.status(200).json({ user });
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ message: "Something went wrong" });
   }
+};
+
+export const getOrgsNames=async(req: Request,res : Response)=>{
+
+  const orgs=await User.find({role:"ngo"}).select("organization_name");
+
+  res.json(orgs)
 }
+export const updateProfile = async (req: Request, res: Response) => {
+  // console.log('Received update profile request:', req.body, 'User:', req.user);
+  try {
+    const { name, organization_name, contact_number } = req.body;
+    const user = await User.findById(req.user.id); // Changed from req.user._id to req.user.id to match token payload
+
+    if (!user) {
+      console.log('User not found in updateProfile for ID:', req.user.id);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (name) user.name = name;
+    if (organization_name !== undefined) user.organization_name = organization_name;
+    if (contact_number !== undefined) user.contact_number = contact_number;
+
+    if ((user.role === 'ngo' || user.role === 'volunteer') && (!user.organization_name || !user.contact_number)) {
+      return res.status(400).json({ message: 'Organization name and contact number are required for NGO or volunteer' });
+    }
+
+    await user.save();
+    res.status(200).json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        organization_name: user.organization_name,
+        contact_number: user.contact_number,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Something went wrong during profile update' });
+  }
+};

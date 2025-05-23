@@ -11,7 +11,9 @@ interface VolunteerStats {
 
 interface VolunteerContextType {
     stats : VolunteerStats;
+    volunteerTasks : any[];
     getVolunteerStats: () => void ;
+    getVolunteerTasks: () => void ;
 }
 
 const VolunteerContext = createContext<VolunteerContextType | undefined>(undefined);
@@ -28,8 +30,8 @@ export function VolunteerProvider({children}: { children : React.ReactNode}){
     available_Task: 0,
    in_progress_task: 0 , 
    Completed_task : 0,
-
     });
+    const [volunteerTasks , setVolunteerTasks] = useState<any[]>([]);
 
     async function getVolunteerStats() {
         try {
@@ -52,8 +54,26 @@ export function VolunteerProvider({children}: { children : React.ReactNode}){
           console.error("Error fetching stats:", error);
         }
       }
+
+      const getVolunteerTasks = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const response = await axios.get(
+            `${import.meta.env.VITE_API_BASE_URL}/volunteer/tasks`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          setVolunteerTasks(response.data);
+        } catch (error) {
+          console.error("Error fetching tasks:", error);
+        }
+      }
+
     return (
-        <VolunteerContext.Provider value={{ stats, getVolunteerStats }}>
+        <VolunteerContext.Provider value={{ stats, getVolunteerStats,getVolunteerTasks, volunteerTasks }}>
           {children}
         </VolunteerContext.Provider>
         );
