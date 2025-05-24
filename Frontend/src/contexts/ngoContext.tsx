@@ -6,6 +6,13 @@ interface NGOStats {
   total_donations: number;
   pendingDonations: number;
 }
+interface Notification {
+  _id: string;
+  message: string;
+  taskId: string;
+  read: boolean;
+  createdAt: string;
+}
 
 interface Volunteer {
   _id: string;
@@ -34,6 +41,7 @@ interface NGOContextType {
   stats: NGOStats;
   volunteers: Volunteer[];
   claimedFoods: Food[];
+  notifications: Notification[];
   getNGOStats: () => Promise<void>;
   getVolunteers: () => Promise<void>;
   getClaimedFoods: () => Promise<void>;
@@ -43,6 +51,8 @@ interface NGOContextType {
   addVolunteer: (data: { name: string; email: string; contact_number: string }) => Promise<void>;
   updateFoodStatus: (foodId: string, status: string) => Promise<void>;
   deleteClaimedFood: (foodId: string) => Promise<void>;
+  getNotifications: () => Promise<void>;
+  markNotificationAsRead: (notificationId: string) => Promise<void>;
 }
 
 const NGOContext = createContext<NGOContextType | undefined>(undefined);
@@ -84,6 +94,35 @@ export function NGOProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error) {
       console.error("Failed to fetch NGO stats:", error);
+    }
+  }
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  async function getNotifications() {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/ngo/notifications`, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      });
+      setNotifications(response.data);
+    } catch (error) {
+      console.error("Failed to fetch NGO notifications:", error);
+    }
+  }
+
+  async function markNotificationAsRead(notificationId: string) {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/ngo/notifications/${notificationId}/read`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      });
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === notificationId ? { ...n, read: true } : n))
+      );
+    } catch (error) {
+      console.error("Failed to mark NGO notification as read:", error);
     }
   }
 
@@ -224,6 +263,7 @@ const deleteClaimedFood = async (foodId: string) => {
         stats,
         volunteers,
         claimedFoods,
+        notifications,
         getNGOStats,
         getVolunteers,
         getClaimedFoods,
@@ -232,7 +272,9 @@ const deleteClaimedFood = async (foodId: string) => {
         updateVolunteer,
         addVolunteer,
         updateFoodStatus,
-        deleteClaimedFood 
+        deleteClaimedFood,
+        getNotifications,
+        markNotificationAsRead,
       }}
     >
       {children}

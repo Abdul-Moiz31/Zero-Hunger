@@ -135,6 +135,7 @@ const DonationForm = ({
     data.append("temperature_requirements", formData.temperature_requirements);
     data.append("dietary_info", formData.dietary_info);
     data.append("pickup_location", formData.pickup_location);
+    data.append("status", "available");
     if (formData.img) {
       data.append("img", formData.img);
     }
@@ -411,48 +412,32 @@ const DonorDashboard = () => {
   } = useDonorContext();
 
   const handleSubmit = useCallback(
-    async (e: React.FormEvent, formData: FormData) => {
-      e.preventDefault();
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("Authentication token not found");
-        const response = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/donor/donate`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-            withCredentials: true,
-          }
-        );
-        if (response.status === 201 || response.status === 200) {
-          await getMyDonations();
-          setShowDonationForm(false);
-          toast.success("Donation created successfully!", {
-            duration: 3000,
-            position: "top-right",
-            style: {
-              background: "#16a34a",
-              color: "#ffffff",
-              padding: "12px 24px",
-              borderRadius: "8px",
-              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-            },
-          });
+  async (e: React.FormEvent, formData: FormData) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Authentication token not found");
+      formData.append("status", "available");
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/donor/donate`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
         }
-      } catch (err: any) {
-        console.error("Error uploading donation:", err);
-        const errorMessage =
-          err.response?.data?.message ||
-          err.message ||
-          "Failed to create donation. Please try again.";
-        toast.error(errorMessage, {
+      );
+      if (response.status === 201 || response.status === 200) {
+        await getMyDonations();
+        setShowDonationForm(false);
+        toast.success("Donation created successfully!", {
           duration: 3000,
           position: "top-right",
           style: {
-            background: "#dc2626",
+            background: "#16a34a",
             color: "#ffffff",
             padding: "12px 24px",
             borderRadius: "8px",
@@ -460,9 +445,27 @@ const DonorDashboard = () => {
           },
         });
       }
-    },
-    [getMyDonations]
-  );
+    } catch (err: any) {
+      console.error("Error uploading donation:", err);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to create donation. Please try again.";
+      toast.error(errorMessage, {
+        duration: 3000,
+        position: "top-right",
+        style: {
+          background: "#dc2626",
+          color: "#ffffff",
+          padding: "12px 24px",
+          borderRadius: "8px",
+          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+        },
+      });
+    }
+  },
+  [getMyDonations]
+);
 
   useEffect(() => {
     getDonorStats();

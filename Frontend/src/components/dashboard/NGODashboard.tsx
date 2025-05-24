@@ -27,12 +27,6 @@
   joinedDate: string;
   organization_name: string; // Added
 }
-  interface Volunteer {
-  _id: string;
-  name: string;
-  email: string;
-  contact_number: string;
-}
 
 interface VolunteerFormProps {
   editingVolunteer: Volunteer | null;
