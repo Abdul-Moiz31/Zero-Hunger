@@ -9,7 +9,7 @@
     expiry_time: Date,
     pickup_window_start: String,
     pickup_window_end: String,
-    status: { type: String, enum: ['available', 'assigned', 'completed'], default: 'available' },
+    status: { type: String, enum: ['available', 'in_progress', 'assigned', 'completed'], default: 'available' },
     ngoId: { type: Schema.Types.ObjectId, ref: 'User' },
     acceptance_time: Date,
     volunteerId: { type: Schema.Types.ObjectId, ref: 'User' },

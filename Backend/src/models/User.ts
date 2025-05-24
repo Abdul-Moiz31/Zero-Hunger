@@ -25,6 +25,7 @@ const userSchema = new Schema(
     joinedDate: { type: Date, default: Date.now },
     isApproved: { type: Boolean, default: false },
     ngoId: { type: Schema.Types.ObjectId, ref: "User" },
+    rating: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

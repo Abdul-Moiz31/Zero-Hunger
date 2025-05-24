@@ -9,7 +9,7 @@ export interface Donation {
   title: string
   description: string
   quantity: number
-  unit: string
+  quantity_unit: string
   expiry_time: string
   pickup_window_start: string
   pickup_window_end: string
