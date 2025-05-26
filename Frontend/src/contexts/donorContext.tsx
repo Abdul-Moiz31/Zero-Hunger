@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 
+
+
 export interface Notification {
   _id: string;
   recipientId: string;
@@ -22,11 +24,12 @@ export interface Donation {
   expiry_time: string;
   pickup_window_start: string;
   pickup_window_end: string;
-  status: "available" | "assigned" | "completed" | "cancelled";
+  status: "available" | "assigned" | "completed" ;
   temperature_requirements?: string;
   dietary_info?: string;
   img?: string;
   pickup_location?: string;
+  createdAt?: string; 
 }
 
 interface DonorStats {

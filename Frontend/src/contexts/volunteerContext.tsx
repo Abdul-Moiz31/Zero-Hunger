@@ -14,7 +14,7 @@ interface Task {
   from_location: string;
   to_location: string;
   pickup_location: string;
-  status: "available" | "assigned" | "in_progress" | "completed" | "cancelled";
+  status: "available" | "assigned" | "in_progress" | "completed" ;
   pickup_window_start: string;
   pickup_window_end: string;
   ngoId: { organization_name: string };

@@ -11,7 +11,7 @@ const foodSchema = new Schema({
   pickup_window_end: String,
   status: {
     type: String,
-    enum: ["available", "in_progress", "assigned", "completed" ,"cancelled"],
+    enum: ["available", "in_progress", "assigned", "completed"],
     default: "available",
   },
   ngoId: { type: Schema.Types.ObjectId, ref: "User" },
@@ -21,6 +21,7 @@ const foodSchema = new Schema({
   pickup_location: String,
   temperature_requirements: String,
   dietary_info: String,
+  createdAt: { type: Date, default: Date.now },
   img: String,
 });
 

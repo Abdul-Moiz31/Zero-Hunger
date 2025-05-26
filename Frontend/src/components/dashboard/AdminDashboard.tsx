@@ -28,6 +28,7 @@ interface User {
 
 interface FoodDonation {
   id: string;
+  _id?: string; // Add this to handle both id and _id
   donorName: string;
   ngoName: string;
   volunteerName: string;
@@ -37,6 +38,27 @@ interface FoodDonation {
   pickup_location: string;
   createdAt: string;
 }
+const formatDate = (dateValue: string | undefined | null) => {
+  if (!dateValue) return 'No date';
+  
+  try {
+    const date = new Date(dateValue);
+    
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date value:', dateValue);
+      return 'Invalid date';
+    }
+    
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.error('Date formatting error:', error, 'for value:', dateValue);
+    return 'Date error';
+  }
+};
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<
@@ -471,7 +493,10 @@ const AdminDashboard = () => {
                       <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{`${donation.quantity} ${donation.unit}`}</td>
                       <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{donation.pickup_location}</td>
                       <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">
-                        {new Date(donation.createdAt).toLocaleDateString()}
+                        {formatDate(
+    donation.createdAt 
+  )}
+                                  
                       </td>
                       <td className="py-3 sm:py-4 px-4">
                         <button

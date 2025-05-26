@@ -87,7 +87,8 @@ export const claimFood = async (req: Request, res: Response) => {
     if (donor) {
       await Notification.create({
         recipientId: updatedFood.donorId,
-        message: `Your donation "${updatedFood.title}" has been claimed by an NGO.`,
+        message: `Your donation "${updatedFood.title}" has been claimed by NGO: "${organization_name};
+}".`,
         taskId: updatedFood._id,
         read: false,
       });
@@ -299,7 +300,7 @@ export const updateFoodStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const validStatuses = ["available", "in_progress", "assigned", "completed", "cancelled"];
+    const validStatuses = ["available", "in_progress", "assigned", "completed"];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
@@ -316,7 +317,7 @@ export const updateFoodStatus = async (req: Request, res: Response) => {
       const volunteerName = food.volunteerId ? (food.volunteerId as any).name : "no volunteer";
       await Notification.create({
         recipientId: food.donorId,
-        message: `Your donation "${food.title}" has been completed by volunteer ${volunteerName}.`,
+        message: `Your donation "${food.title}" has been completed by  ${volunteerName}.`,
         taskId: food._id,
         read: false,
       });

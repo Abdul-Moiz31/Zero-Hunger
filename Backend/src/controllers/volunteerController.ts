@@ -72,7 +72,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
     } else if (status === "completed" && previousStatus !== "completed") {
       await Notification.create({
         recipientId: ngoId,
-        message: `Task "${task.title}" has been completed by volunteer ${req.user.name}.`,
+        message: `Task "${task.title}" has been completed by  ${req.user.name}.`,
         taskId,
       });
       // if (status === "completed" ) {

@@ -24,7 +24,7 @@ interface FoodListing {
   expiry_time: string;
   pickup_window_start: string;
   pickup_window_end: string;
-  status: "available" | "assigned" | "completed"| "In Progress" | "cancelled";
+  status: "available" | "assigned" | "completed"| "In Progress" ;
   temperature_requirements?: string;
   dietary_info?: string;
   pickup_location?: string;
@@ -388,7 +388,7 @@ const DonorDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [showDonationForm, setShowDonationForm] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const statusOptions = ["available", "in_progress", "assigned", "completed" ,"cancelled"]; 
+  const statusOptions = ["available", "in_progress", "assigned", "completed" ]; 
   const [isLoading, setIsLoading] = useState(false);
 
   const initialFormData: FormData = {
@@ -551,7 +551,7 @@ const Overview = () => (
                     ? "bg-blue-100 text-blue-700"
                     : donation.status === "completed"
                     ? "bg-gray-200 text-gray-700"
-                    : "bg-red-100 text-red-700"
+                    : "bg-green-100 text-green-700"
                 }`}
               >
                 {donation.status.charAt(0).toUpperCase() + donation.status.slice(1)}
@@ -660,13 +660,13 @@ const Overview = () => (
                       value={donation.status}
                       onChange={(e) => handleStatusChange(donation._id, e.target.value)}
                       className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold ${
-                        donation.status === "cancelled"
-                          ? "bg-red-100 text-red-700"
+                        donation.status === "available"
+                          ? "bg-green-100 text-green-700"
                           : donation.status === "completed"
                           ? "bg-gray-100 text-gray-800"
                           : donation.status === "assigned"
                           ? "bg-blue-100 text-blue-700"
-                          : "bg-green-100 text-green-700"
+                          :"bg-green-100 text-green-700"
                       }`}
                     >
                       {statusOptions.map((status) => (
