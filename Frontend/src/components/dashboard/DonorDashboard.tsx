@@ -10,6 +10,7 @@ import {
   Calendar,
   Clock3,
   Trash2,
+  Bell,
 } from "lucide-react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
@@ -19,21 +20,22 @@ interface FoodListing {
   title: string;
   description: string;
   quantity: number;
-  quantity_unit: string;
+  unit: string;
   expiry_time: string;
   pickup_window_start: string;
   pickup_window_end: string;
-  status: "available" | "assigned" | "completed" | "cancelled";
+  status: "available" | "assigned" | "completed"| "In Progress" | "cancelled";
   temperature_requirements?: string;
   dietary_info?: string;
   pickup_location?: string;
+  ngoId?: string;
 }
 
 interface FormData {
   title: string;
   description: string;
   quantity: string;
-  quantity_unit: string;
+  unit: string;
   expiry_time: string;
   pickup_window_start: string;
   pickup_window_end: string;
@@ -47,7 +49,7 @@ type DonationFields = {
   title: string;
   description: string;
   quantity: string;
-  quantity_unit: string;
+  unit: string;
   expiry_time: string;
   pickup_window_start: string;
   pickup_window_end: string;
@@ -81,7 +83,7 @@ const DonationForm = ({
       errors.description = "Description is required";
     if (!formData.quantity || Number(formData.quantity) <= 0)
       errors.quantity = "Quantity must be a positive number";
-    if (!formData.quantity_unit) errors.quantity_unit = "Unit is required";
+    if (!formData.unit) errors.unit = "Unit is required";
     if (!formData.expiry_time) errors.expiry_time = "Expiry time is required";
     else if (expiry <= now)
       errors.expiry_time = "Expiry time must be in the future";
@@ -121,14 +123,14 @@ const DonationForm = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+ const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
     const data = new FormData();
     data.append("title", formData.title);
     data.append("description", formData.description);
     data.append("quantity", formData.quantity);
-    data.append("unit", formData.quantity_unit);
+    data.append("unit", formData.unit);
     data.append("expiry_time", formData.expiry_time);
     data.append("pickup_window_start", formData.pickup_window_start);
     data.append("pickup_window_end", formData.pickup_window_end);
@@ -143,7 +145,7 @@ const DonationForm = ({
     setFormData(initialFormData);
   };
 
-  return (
+ return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
       <div className="bg-white rounded-xl p-4 sm:p-6 w-full max-w-lg sm:max-w-2xl animate-scaleIn overflow-y-auto max-h-[90vh]">
         <div className="flex justify-between items-center mb-4">
@@ -198,11 +200,11 @@ const DonationForm = ({
                   min="1"
                 />
                 <select
-                  name="quantity_unit"
-                  value={formData.quantity_unit}
+                  name="unit"
+                  value={formData.unit}
                   onChange={handleFormChange}
                   className={`w-full sm:w-32 p-2 border ${
-                    formErrors.quantity_unit ? "border-red-500" : "border-gray-300"
+                    formErrors.unit ? "border-red-500" : "border-gray-300"
                   } rounded-lg text-sm sm:text-base`}
                 >
                   <option value="meals">Meals</option>
@@ -213,8 +215,8 @@ const DonationForm = ({
               {formErrors.quantity && (
                 <p className="text-red-500 text-xs mt-1">{formErrors.quantity}</p>
               )}
-              {formErrors.quantity_unit && (
-                <p className="text-red-500 text-xs mt-1">{formErrors.quantity_unit}</p>
+              {formErrors.unit && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.unit}</p>
               )}
             </div>
 
@@ -385,14 +387,15 @@ const DonationForm = ({
 const DonorDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [showDonationForm, setShowDonationForm] = useState(false);
-  const statusOptions = ["available", "assigned", "completed"];
+  const [showNotifications, setShowNotifications] = useState(false);
+  const statusOptions = ["available", "in_progress", "assigned", "completed" ,"cancelled"]; 
   const [isLoading, setIsLoading] = useState(false);
 
   const initialFormData: FormData = {
     title: "",
     description: "",
     quantity: "",
-    quantity_unit: "meals",
+    unit: "meals",
     expiry_time: "",
     pickup_window_start: "",
     pickup_window_end: "",
@@ -405,39 +408,63 @@ const DonorDashboard = () => {
   const {
     stats,
     donations,
+    notifications,
     getDonorStats,
     getMyDonations,
     deleteDonation,
     updateDonationStatus,
+    getNotifications,
+    markNotificationAsRead,
   } = useDonorContext();
 
-  const handleSubmit = useCallback(
-  async (e: React.FormEvent, formData: FormData) => {
-    e.preventDefault();
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("Authentication token not found");
-      formData.append("status", "available");
+  // Calculate unread notifications count for the badge
+  const unreadCount = notifications.filter((notif) => !notif.read).length;
 
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/donor/donate`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-          withCredentials: true,
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent, formData: FormData) => {
+      e.preventDefault();
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("Authentication token not found");
+        formData.append("status", "available");
+
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/donor/donate`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${token}`,
+            },
+            withCredentials: true,
+          }
+        );
+        if (response.status === 201 || response.status === 200) {
+          await getMyDonations();
+          setShowDonationForm(false);
+          toast.success("Donation created successfully!", {
+            duration: 3000,
+            position: "top-right",
+            style: {
+              background: "#16a34a",
+              color: "#ffffff",
+              padding: "12px 24px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+            },
+          });
         }
-      );
-      if (response.status === 201 || response.status === 200) {
-        await getMyDonations();
-        setShowDonationForm(false);
-        toast.success("Donation created successfully!", {
+      } catch (err: any) {
+        console.error("Error uploading donation:", err);
+        const errorMessage =
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to create donation. Please try again.";
+        toast.error(errorMessage, {
           duration: 3000,
           position: "top-right",
           style: {
-            background: "#16a34a",
+            background: "#dc2626",
             color: "#ffffff",
             padding: "12px 24px",
             borderRadius: "8px",
@@ -445,34 +472,18 @@ const DonorDashboard = () => {
           },
         });
       }
-    } catch (err: any) {
-      console.error("Error uploading donation:", err);
-      const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        "Failed to create donation. Please try again.";
-      toast.error(errorMessage, {
-        duration: 3000,
-        position: "top-right",
-        style: {
-          background: "#dc2626",
-          color: "#ffffff",
-          padding: "12px 24px",
-          borderRadius: "8px",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-        },
-      });
-    }
-  },
-  [getMyDonations]
-);
+    },
+    [getMyDonations]
+  );
 
   useEffect(() => {
-    getDonorStats();
-    getMyDonations();
+    setIsLoading(true);
+    Promise.all([getDonorStats(), getMyDonations(), getNotifications()]).finally(() =>
+      setIsLoading(false)
+    );
   }, []);
 
-  const Overview = () => (
+const Overview = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <DashboardCard
@@ -515,7 +526,7 @@ const DonorDashboard = () => {
                 <div>
                   <h3 className="font-semibold text-gray-800 text-sm sm:text-base">{donation.title}</h3>
                   <p className="text-xs sm:text-sm text-gray-500">
-                    {donation.quantity} {donation.quantity_unit || "items"}
+                    {donation.quantity} {donation.unit || "items"}
                   </p>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400 mt-1">
                     <span className="flex items-center">
@@ -558,9 +569,45 @@ const DonorDashboard = () => {
   const DonationsList = useCallback(() => {
     const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
 
-    const handleStatusChange = async (id: string, newStatus: string) => {
-      await updateDonationStatus(id, newStatus);
+    const handleStatusChange = async (id: string, newStatus: string, ngoId?: string) => {
+      await updateDonationStatus(id, newStatus, ngoId);
       setEditingStatusId(null);
+    };
+
+    const handleClaimDonation = async (id: string) => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Authentication token not found", {
+          duration: 3000,
+          position: "top-right",
+        });
+        return;
+      }
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      try {
+        await axios.put(
+          `${import.meta.env.VITE_API_BASE_URL}/donor/donation/${id}/status`,
+          { status: "assigned", ngoId: user._id },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            withCredentials: true,
+          }
+        );
+        await getMyDonations(); 
+        await getNotifications(); 
+        toast.success("Donation claimed successfully!", {
+          duration: 3000,
+          position: "top-right",
+        });
+      } catch (error) {
+        console.error("Error claiming donation:", error);
+        toast.error("Failed to claim donation.", {
+          duration: 3000,
+          position: "top-right",
+        });
+      }
     };
 
     return (
@@ -597,7 +644,7 @@ const DonorDashboard = () => {
                 >
                   <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">{donation.title}</td>
                   <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
-                    {donation.quantity} {donation.quantity_unit || "items"}
+                    {donation.quantity} {donation.unit || "items"}
                   </td>
                   <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
                     {`${new Date(donation.pickup_window_start).toLocaleString()} - ${new Date(
@@ -652,7 +699,7 @@ const DonorDashboard = () => {
         </div>
       </div>
     );
-  }, [donations, deleteDonation, updateDonationStatus, statusOptions]);
+  }, [donations, deleteDonation, updateDonationStatus, getMyDonations, getNotifications, statusOptions]);
 
   if (isLoading) {
     return (
@@ -662,32 +709,92 @@ const DonorDashboard = () => {
     );
   }
 
-  return (
+ return (
     <div className="p-4 sm:p-6">
       <Toaster />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Donor Dashboard</h1>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setActiveTab("overview")}
-            className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition duration-300 text-sm sm:text-base ${
-              activeTab === "overview"
-                ? "bg-green-600 text-white"
-                : "text-gray-600 hover:bg-gray-300"
+        <div className="flex items-center gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveTab("overview")}
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition duration-300 text-sm sm:text-base ${
+                activeTab === "overview"
+                  ? "bg-green-600 text-white"
+                  : "text-gray-600 hover:bg-gray-300"
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab("donations")}
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition duration-300 text-sm sm:text-base ${
+                activeTab === "donations"
+                  ? "bg-green-600 text-white"
+                  : "text-gray-600 hover:bg-gray-300"
+              }`}
+            >
+              My Donations
+            </button>
+          </div>
+          {/* Bell Icon with Notification Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="p-2 rounded-full hover:bg-gray-200 transition duration-300 relative"
+            >
+              <Bell className="w-5 h-5 text-gray-600" />
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+            {showNotifications && (
+  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+    <div className="flex justify-between items-center p-4 border-b">
+      <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+      <button
+        onClick={() => setShowNotifications(false)}
+        className="text-gray-500 hover:text-gray-700"
+      >
+        <X className="w-5 h-5" />
+      </button>
+    </div>
+    <div className="p-4 space-y-3">
+      {notifications.length === 0 ? (
+        <p className="text-gray-500 text-center text-sm">
+          No notifications available.
+        </p>
+      ) : (
+        notifications.map((notification) => (
+          <div
+            key={notification._id}
+            className={`p-3 rounded-lg border ${
+              notification.read ? "bg-gray-50" : "bg-blue-50"
             }`}
           >
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab("donations")}
-            className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition duration-300 text-sm sm:text-base ${
-              activeTab === "donations"
-                ? "bg-green-600 text-white"
-                : "text-gray-600 hover:bg-gray-300"
-            }`}
-          >
-            My Donations
-          </button>
+            <p className={`text-sm ${notification.read ? "text-gray-600" : "text-gray-800 font-medium"}`}>
+              {notification.message}
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              {new Date(notification.createdAt).toLocaleString()}
+            </p>
+            {!notification.read && (
+              <button
+                onClick={() => markNotificationAsRead(notification._id)}
+                className="text-blue-600 hover:text-blue-800 text-xs mt-1"
+              >
+                Mark as Read
+              </button>
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+)}
+          </div>
         </div>
       </div>
 

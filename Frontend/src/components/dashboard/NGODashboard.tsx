@@ -1,31 +1,31 @@
-  import React, { useState, useEffect } from "react";
-  import { useNGOContext } from "@/contexts/ngoContext";
-  import {
-    Users,
-    Package2,
-    Plus,
-    Pencil,
-    Trash2,
-    X,
-    Search,
-    Filter,
-    DollarSign,
-    Eye,
-  } from "lucide-react";
-  import toast, { Toaster } from "react-hot-toast";
-  
+import React, { useState, useEffect } from "react";
+import { useNGOContext } from "@/contexts/ngoContext";
+import {
+  Users,
+  Package2,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Search,
+  Filter,
+  DollarSign,
+  Eye,
+  Bell, 
+} from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
 
-  // Use interfaces from the NGO context
- interface Volunteer {
+// Use interfaces from the NGO context
+interface Volunteer {
   _id: string;
-  title : string;
+  name: string; 
   email: string;
   contact_number: string;
   address: string;
   completedOrders: number;
   status: "Active" | "Inactive";
   joinedDate: string;
-  organization_name: string; // Added
+  organization_name: string;
 }
 
 interface VolunteerFormProps {
@@ -34,28 +34,28 @@ interface VolunteerFormProps {
   onClose: () => void;
 }
 
-  interface Donation {
-    id: string;
-    donorName: string;
-    quantity: number;
-    date: string;
-    status: "Pending" | "Completed" | "Cancelled";
-    assignedVolunteer: string | null;
-  }
+interface Donation {
+  id: string;
+  donorName: string;
+  quantity: number;
+  date: string;
+  status: "Pending" | "Completed" | "Cancelled";
+  assignedVolunteer: string | null;
+}
 
- interface Activity {
+interface Activity {
   id: string;
   description: string;
   date: string;
-  volunteerName: string | null; // Make nullable for claimed foods
-  organizationName?: string; // Added for organization name
+  volunteerName: string | null;
+  organizationName?: string;
 }
 
- interface Food {
+interface Food {
   _id: string;
-  title: string; // Changed from title to name
+  title: string;
   quantity: number;
-  quantity_unit: string;
+  unit: string;
   description: string;
   expiry_time: string;
   temperature_requirements: string;
@@ -69,125 +69,113 @@ interface VolunteerFormProps {
   volunteerId?: { name: string; email: string; _id: string };
 }
 
-  const NGODashboard = () => {
-    const [activeTab, setActiveTab] = useState("dashboard");
-    const [showVolunteerForm, setShowVolunteerForm] = useState(false);
-    const [editingVolunteer, setEditingVolunteer] = useState<Volunteer | null>(
-      null
-    );
-    const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState<
-      "all" | "Active" | "Inactive"
-    >("all");
-    const [donationStatusFilter, setDonationStatusFilter] = useState<
-      "all" | "Pending" | "Completed" | "Cancelled"
-    >("all");
-    const [foodStatusFilter, setFoodStatusFilter] = useState<"all" | "assigned">(
-      "all"
-    );
-    const [error, setError] = useState<string | null>(null);
+const NGODashboard = () => {
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [showVolunteerForm, setShowVolunteerForm] = useState(false);
+  const [editingVolunteer, setEditingVolunteer] = useState<Volunteer | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Inactive">("all");
+  const [donationStatusFilter, setDonationStatusFilter] = useState<"all" | "Pending" | "Completed" | "Cancelled">("all");
+  const [foodStatusFilter, setFoodStatusFilter] = useState<"all" | "assigned">("all");
+  const [error, setError] = useState<string | null>(null);
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false); // State to toggle dropdown
 
-    // Replace with empty arrays instead of mock data
-    const [donations, setDonations] = useState<Donation[]>([]);
-    const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
+  const {
+    getNGOStats,
+    getVolunteers,
+    getClaimedFoods,
+    stats,
+    volunteers,
+    claimedFoods,
+    assignVolunteerToFood,
+    deleteVolunteer,
+    updateVolunteer,
+    addVolunteer,
+    updateFoodStatus,
+    deleteClaimedFood,
+    notifications,
+    getNotifications,
+    markNotificationAsRead,
+  } = useNGOContext();
 
-    // Get data from NGO context
-    const {
-      getNGOStats,
-      getClaimedFoods,
-      stats,
-      getVolunteers,
-      volunteers,
-      claimedFoods,
-      assignVolunteerToFood,
-      deleteVolunteer,
-      updateVolunteer, 
-      addVolunteer,
-      updateFoodStatus,
-      deleteClaimedFood,
-    } = useNGOContext();
+  // Calculate unread notifications count for the badge
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
-    const filteredVolunteers = volunteers.filter((volunteer) => {
-      const matchesSearch =
-        volunteer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        volunteer.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        statusFilter === "all" || volunteer.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-
-    const filteredDonations = donations.filter((donation) => {
-      const matchesSearch = donation.donorName
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        donationStatusFilter === "all" ||
-        donation.status === donationStatusFilter;
-      return matchesSearch && matchesStatus;
-    });
-
-    const filteredClaimedFoods = claimedFoods.filter((food) => {
-      const matchesSearch =
-        food.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        food.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        foodStatusFilter === "all" || food.status === foodStatusFilter;
-      return matchesSearch && matchesStatus;
-    });
-
-    useEffect(() => {
-      // Fetch NGO stats, volunteers, and claimed foods when component mounts
-      getNGOStats();
-      getVolunteers();
-      getClaimedFoods();
-    }, []);
-
-    useEffect(() => {
-  const activities: Activity[] = [];
-
-  // Volunteer registrations
-  volunteers.forEach((volunteer) => {
-    activities.push({
-      id: `volunteer-${volunteer._id}`,
-      description: `New volunteer ${volunteer.name} registered with the organization`,
-      date: volunteer.joinedDate,
-      volunteerName: volunteer.name,
-      organizationName: volunteer.organization_name, // Assuming this field exists
-    });
+  const filteredVolunteers = volunteers.filter((volunteer) => {
+    const matchesSearch =
+      volunteer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      volunteer.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || volunteer.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
-  // Claimed food donations
-  claimedFoods.forEach((food) => {
-    activities.push({
-      id: `claimed-${food._id}`,
-      description: `Food donation "${food.title || 'Unnamed Donation'}" claimed`,
-      date: food.acceptance_time,
-      volunteerName: null,
-      organizationName: undefined, // No organization for claimed food
-    });
+  const filteredDonations = donations.filter((donation) => {
+    const matchesSearch = donation.donorName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = donationStatusFilter === "all" || donation.status === donationStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
-    // Assigned donations
-    if (food.volunteerId) {
-      const assignedVolunteer = volunteers.find(v => v._id === food.volunteerId._id);
+  const filteredClaimedFoods = claimedFoods.filter((food) => {
+    const matchesSearch =
+      food.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      food.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = foodStatusFilter === "all" || food.status === foodStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  useEffect(() => {
+    getNGOStats();
+    getVolunteers();
+    getClaimedFoods();
+    getNotifications();
+    const interval = setInterval(() =>{
+      getNotifications();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const activities: Activity[] = [];
+    volunteers.forEach((volunteer) => {
       activities.push({
-        id: `assigned-${food._id}`,
-        description: `Food donation "${food.title || 'Unnamed Donation'}" assigned to  ${food.volunteerId.name}`, 
-        date: food.acceptance_time,
-        volunteerName: food.volunteerId,
-        organizationName: assignedVolunteer?.organization_name, 
+        id: `volunteer-${volunteer._id}`,
+        description: `New volunteer ${volunteer.name} registered with the organization`,
+        date: volunteer.joinedDate,
+        volunteerName: volunteer.name,
+        organizationName: volunteer.organization_name,
       });
-    }
-  });
+    });
 
-  // Sort by date (descending) and limit to 9
-  const sortedActivities = activities
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 9);
+    claimedFoods.forEach((food) => {
+      activities.push({
+        id: `claimed-${food._id}`,
+        description: `Food donation "${food.title || 'Unnamed Donation'}" claimed`,
+        date: food.acceptance_time,
+        volunteerName: null,
+        organizationName: undefined,
+      });
 
-  setRecentActivities(sortedActivities);
-}, [volunteers, claimedFoods]);
+      if (food.volunteerId) {
+        const assignedVolunteer = volunteers.find((v) => v._id === food.volunteerId._id);
+        activities.push({
+          id: `assigned-${food._id}`,
+          description: `Food donation "${food.title || 'Unnamed Donation'}" assigned to ${food.volunteerId.name}`,
+          date: food.acceptance_time,
+          volunteerName: food.volunteerId.name,
+          organizationName: assignedVolunteer?.organization_name,
+        });
+      }
+    });
 
-    const handleAddVolunteer = async (data: { name: string; email: string; contact_number: string }, id?: string) => {
+    const sortedActivities = activities
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 9);
+    setRecentActivities(sortedActivities);
+  }, [volunteers, claimedFoods]);
+
+  const handleAddVolunteer = async (data: { name: string; email: string; contact_number: string }, id?: string) => {
     try {
       if (id) {
         await updateVolunteer(id, data);
@@ -224,7 +212,7 @@ interface VolunteerFormProps {
     }
   };
 
-    const handleEditVolunteer = (volunteer: Volunteer) => {
+  const handleEditVolunteer = (volunteer: Volunteer) => {
     setEditingVolunteer(volunteer);
     setShowVolunteerForm(true);
   };
@@ -232,7 +220,6 @@ interface VolunteerFormProps {
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this volunteer?")) {
       try {
-        console.log("Attempting to delete volunteer with ID:", id);
         await deleteVolunteer(id);
         toast.success("Volunteer deleted successfully!", {
           duration: 3000,
@@ -248,19 +235,18 @@ interface VolunteerFormProps {
         setError(null);
       } catch (err: any) {
         const errorMessage = err.response?.data?.message || "Failed to delete volunteer";
-        console.error("Delete error:", err.response?.data || err.message);
         setError(errorMessage);
       }
     }
   };
 
-    const handleCloseForm = () => {
+  const handleCloseForm = () => {
     setShowVolunteerForm(false);
     setEditingVolunteer(null);
     setError(null);
   };
 
-const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
+  const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
     if (!volunteerId) {
       setError("Please select a volunteer to assign");
       toast.error("Please select a volunteer to assign", {
@@ -307,13 +293,7 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
     }
   };
 
-    const handleUpdateDonationStatus = (
-      donationId: string,
-      status: "Pending" | "Completed" | "Cancelled"
-    ) => {
-      console.log("Updating donation status:", donationId, status);
-    };
-    const handleUpdateFoodStatus = async (foodId: string, status: string) => {
+  const handleUpdateFoodStatus = async (foodId: string, status: string) => {
     try {
       await updateFoodStatus(foodId, status);
       toast.success("Donation status updated successfully!", {
@@ -379,36 +359,36 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
     }
   };
 
-    const VolunteerForm: React.FC<VolunteerFormProps> = ({ editingVolunteer, onSubmit, onClose }) => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    contact_number: "",
-  });
+  const VolunteerForm: React.FC<VolunteerFormProps> = ({ editingVolunteer, onSubmit, onClose }) => {
+    const [formData, setFormData] = useState({
+      name: "",
+      email: "",
+      contact_number: "",
+    });
 
-  useEffect(() => {
-    if (editingVolunteer) {
-      setFormData({
-        name: editingVolunteer.name,
-        email: editingVolunteer.email,
-        contact_number: editingVolunteer.contact_number,
-      });
-    } else {
-      setFormData({ name: "", email: "", contact_number: "" });
-    }
-  }, [editingVolunteer]);
+    useEffect(() => {
+      if (editingVolunteer) {
+        setFormData({
+          name: editingVolunteer.name,
+          email: editingVolunteer.email,
+          contact_number: editingVolunteer.contact_number,
+        });
+      } else {
+        setFormData({ name: "", email: "", contact_number: "" });
+      }
+    }, [editingVolunteer]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await onSubmit(formData, editingVolunteer?._id);
-      onClose();
-    } catch (error) {
-      console.error("Form submission failed:", error);
-    }
-  };
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      try {
+        await onSubmit(formData, editingVolunteer?._id);
+        onClose();
+      } catch (error) {
+        console.error("Form submission failed:", error);
+      }
+    };
 
-  return (
+    return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div className="bg-white rounded-xl p-8 max-w-md w-full animate-scaleIn">
           <div className="flex justify-between items-center mb-6">
@@ -463,7 +443,7 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
     );
   };
 
-    const VolunteersTable = () => (
+  const VolunteersTable = () => (
     <div className="bg-white rounded-xl shadow-sm">
       {error && (
         <div className="mx-6 mt-6 p-4 bg-red-100 text-red-700 rounded-lg">
@@ -546,7 +526,9 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
                     <td className="py-4">
                       <span
                         className={`px-2 py-1 rounded-full text-sm font-medium ${
-                          volunteer.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                          volunteer.status === "Active"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-700"
                         }`}
                       >
                         {volunteer.status}
@@ -588,7 +570,7 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
     </div>
   );
 
-    const DonationsTable = () => (
+  const DonationsTable = () => (
     <div className="bg-white rounded-xl shadow-sm">
       {error && (
         <div className="mx-6 mt-6 p-4 bg-red-100 text-red-700 rounded-lg">
@@ -611,9 +593,9 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
           </div>
           <div className="relative">
             <select
-              value={foodStatusFilter}
+              value={donationStatusFilter}
               onChange={(e) =>
-                setDonationStatusFilter(e.target.value as "all" | "Pending" | "Completed" | "Cancelled" )
+                setDonationStatusFilter(e.target.value as "all" | "Pending" | "Completed" | "Cancelled")
               }
               className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none"
             >
@@ -647,7 +629,7 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
                     className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                   >
                     <td className="py-4">{food.donorId.name}</td>
-                    <td className="py-4">{food.quantity} {food.quantity_unit}</td>
+                    <td className="py-4">{food.quantity} {food.unit}</td>
                     <td className="py-4">{new Date(food.pickup_window_start).toLocaleString()}</td>
                     <td className="py-4">{food.pickup_location || "N/A"}</td>
                     <td className="py-4">
@@ -709,12 +691,12 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
     </div>
   );
 
-    const ClaimedFoodsTable = () => {
+  const ClaimedFoodsTable = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedFood, setSelectedFood] = useState<Food | null>(null);
     const [selectedVolunteer, setSelectedVolunteer] = useState<string>("");
 
-      return (
+    return (
       <div className="bg-white rounded-xl shadow-sm">
         {isModalOpen && selectedFood && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
@@ -756,7 +738,7 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
                   </div>
                   <div>
                     <span className="font-semibold">Quantity:</span>{" "}
-                    {selectedFood.quantity} {selectedFood.quantity_unit}
+                    {selectedFood.quantity} {selectedFood.unit}
                   </div>
                   <div>
                     <span className="font-semibold">Expiry:</span>{" "}
@@ -835,7 +817,7 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
           </div>
         )}
 
-           <div className="p-6">
+        <div className="p-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div className="flex-1 w-full md:w-auto">
               <div className="relative">
@@ -887,7 +869,7 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
                       className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                     >
                       <td className="py-4">{food.title}</td>
-                      <td className="py-4">{food.quantity} {food.quantity_unit}</td>
+                      <td className="py-4">{food.quantity} {food.unit}</td>
                       <td className="py-4">{food.description}</td>
                       <td className="py-4">{new Date(food.expiry_time).toLocaleDateString()}</td>
                       <td className="py-4">
@@ -896,7 +878,7 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
                       </td>
                       <td className="py-4">
                         <span
-                          className={`px-2 py-1 rounded-full text-sm font-medium ${
+                          className={`px-2 py-1  rounded-full text-sm font-medium ${
                             food.status === "assigned"
                               ? "bg-blue-100 text-blue-700"
                               : "bg-gray-100 text-gray-700"
@@ -945,7 +927,7 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
     );
   };
 
-    const Dashboard = () => (
+  const Dashboard = () => (
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <DashboardCard
@@ -976,25 +958,25 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
           <h2 className="text-xl font-semibold mb-4">Recent Activities</h2>
           {recentActivities.length > 0 ? (
             <div className="space-y-4">
-  {recentActivities.map((activity) => (
-    <div
-      key={activity.id}
-      className="flex justify-between items-center border-b border-gray-100 pb-4"
-    >
-      <div>
-        <p className="font-semibold">{activity.description}</p>
-        <p className="text-sm text-gray-600">
-          {activity.volunteerName
-            ? `By ${activity.organizationName ? ` ${activity.organizationName}` : ''}`
-            : 'By System'}
-        </p>
-      </div>
-      <div className="text-right">
-        <p className="text-sm text-gray-600">{new Date(activity.date).toLocaleDateString()}</p>
-      </div>
-    </div>
-  ))}
-</div>
+              {recentActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex justify-between items-center border-b border-gray-100 pb-4"
+                >
+                  <div>
+                    <p className="font-semibold">{activity.description}</p>
+                    <p className="text-sm text-gray-600">
+                      {activity.volunteerName
+                        ? `By ${activity.organizationName ? ` ${activity.organizationName}` : ''}`
+                        : 'By System'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">{new Date(activity.date).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <p className="text-center text-gray-500 py-6">No recent activities to display.</p>
           )}
@@ -1029,19 +1011,77 @@ const handleAssignVolunteer = async (foodId: string, volunteerId: string) => {
       <Toaster />
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">NGO Dashboard</h1>
-        <div className="flex space-x-4">
-          <TabButton label="Overview" isActive={activeTab === "dashboard"} onClick={() => setActiveTab("dashboard")} />
-          <TabButton
-            label="Manage Volunteers"
-            isActive={activeTab === "volunteers"}
-            onClick={() => setActiveTab("volunteers")}
-          />
-          <TabButton label="Donations" isActive={activeTab === "donations"} onClick={() => setActiveTab("donations")} />
-          <TabButton
-            label="Claimed Foods"
-            isActive={activeTab === "claimedFoods"}
-            onClick={() => setActiveTab("claimedFoods")}
-          />
+        <div className="flex items-center space-x-4">
+          <div className="flex space-x-4">
+            <TabButton label="Overview" isActive={activeTab === "dashboard"} onClick={() => setActiveTab("dashboard")} />
+            <TabButton
+              label="Manage Volunteers"
+              isActive={activeTab === "volunteers"}
+              onClick={() => setActiveTab("volunteers")}
+            />
+            <TabButton label="Donations" isActive={activeTab === "donations"} onClick={() => setActiveTab("donations")} />
+            <TabButton
+              label="Claimed Foods"
+              isActive={activeTab === "claimedFoods"}
+              onClick={() => setActiveTab("claimedFoods")}
+            />
+          </div>
+          {/* Bell Icon with Notifications Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 rounded-full hover:bg-gray-100 focus:outline-none"
+            >
+              <Bell className="w-6 h-6 text-gray-600" />
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                <div className="flex justify-between items-center p-4 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+                  <button
+                    onClick={() => setShowNotifications(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-4 space-y-3">
+                  {notifications.length > 0 ? (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification._id}
+                        className={`p-3 rounded-lg ${
+                          notification.read ? "bg-gray-50" : "bg-blue-50"
+                        } flex justify-between items-start`}
+                      >
+                        <div>
+                          <p className="text-sm text-gray-800">{notification.message}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {new Date(notification.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                        {!notification.read && (
+                          <button
+                            onClick={() => markNotificationAsRead(notification._id)}
+                            className="text-blue-600 hover:text-blue-800 text-xs"
+                          >
+                            Mark as read
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-gray-500 py-4">No notifications available.</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       {activeTab === "dashboard" ? (

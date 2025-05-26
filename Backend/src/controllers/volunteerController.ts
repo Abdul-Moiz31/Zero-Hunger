@@ -6,7 +6,6 @@ import Notification from "../models/Notification";
 export const getVolunteerStats = async (req: Request, res: Response) => {
   try {
     const volunteerId = req.user.id;
-    console.log("Fetching stats for volunteer:", volunteerId);
 
     const available_Task = await Food.countDocuments({ status: "available" });
     const in_progress_task = await Food.countDocuments({ volunteerId, status: "in_progress" });
@@ -27,8 +26,8 @@ export const getVolunteerTasks = async (req: Request, res: Response) => {
   try {
     const volunteerId = req.user.id;
     const tasks = await Food.find({ volunteerId })
-      .populate("ngoId", "organization_name") // Populate ngoId with organization_name
-      .populate("donorId", "name email"); // Populate donorId for completeness
+      .populate("ngoId", "organization_name") 
+      .populate("donorId", "name email");
     res.status(200).json(tasks);
   } catch (error: any) {
     console.error("Error fetching volunteer tasks:", error);
@@ -41,7 +40,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
     const { taskId } = req.params;
     const { status } = req.body;
     const volunteerId = req.user.id;
-    console.log("Updating task status:", { taskId, status, volunteerId });
+    // console.log("Updating task status:", { taskId, status, volunteerId });
 
     const validStatuses = ["available", "in_progress", "assigned", "completed"];
     if (!validStatuses.includes(status)) {
@@ -63,10 +62,11 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
 
     // Create notification for NGO based on status change
     const ngoId = task.ngoId;
+    // const donorId = task.ngoId;
     if (status === "in_progress" && previousStatus !== "in_progress") {
       await Notification.create({
         recipientId: ngoId,
-        message: `Task "${task.title}" is now in progress by volunteer ${req.user.name}.`,
+        message: `Task "${task.title}" is now in progress by ${req.user.name}.`,
         taskId,
       });
     } else if (status === "completed" && previousStatus !== "completed") {
@@ -75,6 +75,12 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
         message: `Task "${task.title}" has been completed by volunteer ${req.user.name}.`,
         taskId,
       });
+      // if (status === "completed" ) {
+      // await Notification.create({
+      //   recipientId: donorId,
+      //   message: `Task "${task.title}" is now completed by ${req.user.name}.`,
+      //   taskId,
+      // });
       if (task.donorId) {
         await Notification.create({
           recipientId: task.donorId,

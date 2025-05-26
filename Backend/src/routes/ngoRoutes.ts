@@ -17,9 +17,13 @@ router.patch("/food/:id/status", authMiddleware(["ngo"]), updateFoodStatus);
 router.delete("/claimed-food/:id", authMiddleware(["ngo"]), deleteClaimedFood);
 router.get('/notifications', authMiddleware(['ngo']), async (req, res) => {
   try {
+    // console.log(" Error" , req.user.id);
     const notifications = await Notification.find({ recipientId: req.user.id }).sort({ createdAt: -1 });
+    
+    // console.log(" noti" , notifications);
     res.status(200).json(notifications);
   } catch (error) {
+    console.log("This is the id error" , error);
     res.status(500).json({ message: "Failed to fetch notifications", error });
   }
 });
