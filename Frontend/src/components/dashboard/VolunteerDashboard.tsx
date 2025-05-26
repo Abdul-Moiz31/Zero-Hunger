@@ -10,7 +10,7 @@ interface Task {
   from_location: string;
   to_location: string;
   pickup_location: string;
-  status: "available" | "assigned" | "in_progress" | "completed" | "cancelled";
+  status: "available" | "assigned" | "in_progress" | "completed";
   pickup_window_start: string;
   pickup_window_end: string;
   ngoId: { organization_name: string };
@@ -446,7 +446,7 @@ const Badge = ({ status }: { status: string }) => {
     assigned: "bg-blue-100 text-blue-800",
     in_progress: "bg-yellow-100 text-yellow-800",
     completed: "bg-gray-100 text-gray-800",
-    cancelled: "bg-red-100 text-red-800",
+    // cancelled: "bg-red-100 text-red-800",
   };
   return (
     <span className={`px-3 py-1 rounded-full text-sm font-medium ${map[status] || 'bg-gray-100 text-gray-800'}`}>

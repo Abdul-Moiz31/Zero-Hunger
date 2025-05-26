@@ -32,7 +32,6 @@ export const authMiddleware = (roles: string[] = []) => {
       req.user = decoded;
       // req.user = {}; 
        if (roles.length && !roles.includes((decoded as any).role)) {
-        console.log(" role " , roles);
         
         return res.status(403).json({ message: "Forbidden: Access denied" });
       }

@@ -119,7 +119,7 @@ export const updateDonationStatus = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { status, ngoId } = req.body;
 
-    if (!["available", "assigned", "completed", "cancelled"].includes(status)) {
+    if (!["available", "assigned", "completed"].includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
 

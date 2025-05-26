@@ -39,7 +39,7 @@ interface Donation {
   donorName: string;
   quantity: number;
   date: string;
-  status: "Pending" | "Completed" | "Cancelled";
+  status: "Pending" | "Completed" | "Available";
   assignedVolunteer: string | null;
 }
 
@@ -63,7 +63,7 @@ interface Food {
   pickup_window_end: string;
   dietary_info: string;
   img: string;
-  status: "Pending" | "Completed" | "Cancelled" | "assigned";
+  status: "Pending" | "Completed" | "assigned";
   acceptance_time: string;
   donorId: { name: string; email: string };
   volunteerId?: { name: string; email: string; _id: string };
@@ -75,7 +75,7 @@ const NGODashboard = () => {
   const [editingVolunteer, setEditingVolunteer] = useState<Volunteer | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Inactive">("all");
-  const [donationStatusFilter, setDonationStatusFilter] = useState<"all" | "Pending" | "Completed" | "Cancelled">("all");
+  const [donationStatusFilter, setDonationStatusFilter] = useState<"all" | "Pending" | "Completed" | "Available">("all");
   const [foodStatusFilter, setFoodStatusFilter] = useState<"all" | "assigned">("all");
   const [error, setError] = useState<string | null>(null);
   const [donations, setDonations] = useState<Donation[]>([]);
@@ -595,14 +595,14 @@ const NGODashboard = () => {
             <select
               value={donationStatusFilter}
               onChange={(e) =>
-                setDonationStatusFilter(e.target.value as "all" | "Pending" | "Completed" | "Cancelled")
+                setDonationStatusFilter(e.target.value as "all" | "Pending" | "Completed" | "Available")
               }
               className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none"
             >
               <option value="all">All Status</option>
               <option value="Pending">Pending</option>
               <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
+              <option value="Available">Available</option>
               <option value="assigned">Assigned</option>
             </select>
             <Filter className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
@@ -648,7 +648,6 @@ const NGODashboard = () => {
                       >
                         <option value="Pending">Pending</option>
                         <option value="Completed">Completed</option>
-                        <option value="Cancelled">Cancelled</option>
                         <option value="assigned">Assigned</option>
                       </select>
                     </td>
