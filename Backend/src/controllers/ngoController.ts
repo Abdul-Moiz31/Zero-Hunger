@@ -57,12 +57,10 @@ export const getMyVolunteers = async (req: Request, res: Response) => {
   }
 };
 
-    // loop to find the count of Food where voluntterid is userid and status is completed
-
 // foodController.js
-export const claimFood = async (req, res) => {
+export const claimFood = async (req: Request, res: Response) => {
   const { foodId } = req.body;
-  const userId = req.user.id; // Assuming user is available from authentication middleware
+  const userId = req.user.id || req.user._id; // Assuming user is available from authentication middleware
   
   if (!foodId) {
     return res.status(400).json({ success: false, message: 'Food ID is required' });
@@ -84,7 +82,17 @@ export const claimFood = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Food listing not found' });
     }
     
-   
+    // Notify the donor about the claim
+    const donor = await User.findById(updatedFood.donorId);
+    if (donor) {
+      await Notification.create({
+        recipientId: updatedFood.donorId,
+        message: `Your donation "${updatedFood.title}" has been claimed by an NGO.`,
+        taskId: updatedFood._id,
+        read: false,
+      });
+    }
+
     // Return the updated food listing
     return res.status(200).json({ 
       success: true, 
@@ -249,7 +257,7 @@ export const addVolunteer = async (req: Request, res: Response) => {
     const volunteer = new User({
       name,
       email,
-      password: randomPassword, // Will be hashed by pre-save hook
+      password: randomPassword, 
       contact_number,
       role: "volunteer",
       organization_name: ngo.organization_name,
@@ -287,22 +295,31 @@ export const addVolunteer = async (req: Request, res: Response) => {
 };
 
 // Update Food Status
-export const updateFoodStatus = async (req, res) => {
+export const updateFoodStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const validStatuses = ["Pending", "Completed", "Cancelled", "assigned"];
+    const validStatuses = ["available", "in_progress", "assigned", "completed", "cancelled"];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
-    const ngoId = req.user.ngoId;
+    const ngoId = new mongoose.Types.ObjectId(req.user._id || req.user.id);
     const food = await Food.findOneAndUpdate(
       { _id: id, ngoId },
       { status },
       { new: true }
-    );
+    ).populate("volunteerId", "name");
     if (!food) {
       return res.status(404).json({ message: "Food donation not found" });
+    }
+    if (status === "completed" && food.donorId) {
+      const volunteerName = food.volunteerId ? (food.volunteerId as any).name : "no volunteer";
+      await Notification.create({
+        recipientId: food.donorId,
+        message: `Your donation "${food.title}" has been completed by volunteer ${volunteerName}.`,
+        taskId: food._id,
+        read: false,
+      });
     }
     res.status(200).json({ message: "Food status updated successfully", food });
   } catch (error) {
@@ -312,7 +329,7 @@ export const updateFoodStatus = async (req, res) => {
 };
 
 // Delete Claimed Food
-export const deleteClaimedFood = async (req, res) => {
+export const deleteClaimedFood = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const ngoId = req.user.ngoId;
@@ -326,7 +343,8 @@ export const deleteClaimedFood = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-// Assign a volunteer to a food item
+// AssignVolunteerToFood
+
 export const assignVolunteerToFood = async (req: Request, res: Response) => {
   const { volunteerId, foodId } = req.body;
   const ngoId = req.user.id;
@@ -350,11 +368,24 @@ export const assignVolunteerToFood = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Food item not found' });
     }
 
-    // Create notification for the volunteer
+    // Fetch the NGO's name
+    const ngo = await User.findById(ngoId);
+    if (!ngo) {
+      return res.status(404).json({ success: false, message: 'NGO not found' });
+    }
+
+    // Fetch the volunteer's name
+    const volunteer = await User.findById(volunteerId);
+    if (!volunteer) {
+      return res.status(404).json({ success: false, message: 'Volunteer not found' });
+    }
+
+    // Create notification for the NGO
     await Notification.create({
-      recipientId: volunteerId,
-      message: `You have been assigned to the food donation "${updatedFood.title}" by ${req.user.name}.`,
+      recipientId: ngoId, // Changed to NGO's ID
+      message: `Volunteer ${volunteerId} assigned to food donation "${updatedFood.title}".`,
       taskId: foodId,
+      read: false,
     });
 
     return res.status(200).json({ 

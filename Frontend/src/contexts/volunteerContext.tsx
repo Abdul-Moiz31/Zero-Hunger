@@ -36,10 +36,10 @@ interface VolunteerContextType {
   notifications: Notification[];
   loading: { stats: boolean; tasks: boolean; updating: boolean; notifications: boolean };
   error: string | null;
-  getVolunteerStats: () => Promise<void>;
-  getVolunteerTasks: () => Promise<void>;
+  getVolunteerStats: (silent?: boolean) => Promise<void>;
+  getVolunteerTasks: (silent?: boolean) => Promise<void>;
   updateTaskStatus: (taskId: string, status: Task["status"]) => Promise<void>;
-  getNotifications: () => Promise<void>;
+  getNotifications: (silent?: boolean) => Promise<void>;
   markNotificationAsRead: (notificationId: string) => Promise<void>;
 }
 
@@ -68,72 +68,174 @@ export function VolunteerProvider({ children }: { children: React.ReactNode }) {
     notifications: false,
   });
   const [error, setError] = useState<string | null>(null);
-  const requestInProgress = useRef({ stats: false, tasks: false, updating: false, notifications: false });
+  const requestInProgress = useRef({ 
+    stats: false, 
+    tasks: false, 
+    updating: false, 
+    notifications: false 
+  });
 
-  const getVolunteerStats = useCallback(async () => {
+  // Track if initial data has been loaded
+  const [hasInitialData, setHasInitialData] = useState({
+    stats: false,
+    tasks: false,
+    notifications: false,
+  });
+
+  const getVolunteerStats = useCallback(async (silent = false) => {
     if (requestInProgress.current.stats) return;
     requestInProgress.current.stats = true;
-    setLoading((prev) => ({ ...prev, stats: true }));
-    setError(null);
+
+    // Only show loading on initial fetch or explicit non-silent calls
+    const shouldShowLoading = !silent && !hasInitialData.stats;
+    
+    if (shouldShowLoading) {
+      setLoading((prev) => ({ ...prev, stats: true }));
+    }
+    
+    // Only clear error on non-silent calls
+    if (!silent) {
+      setError(null);
+    }
+
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
+      
       const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/volunteer/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("Stats Response:", response.data);
+      
       setStats({
         available_Task: response.data.available_Task || 0,
         in_progress_task: response.data.in_progress_task || 0,
         Completed_task: response.data.Completed_task || 0,
       });
+
+      // Mark as having initial data
+      if (!hasInitialData.stats) {
+        setHasInitialData(prev => ({ ...prev, stats: true }));
+      }
+
     } catch (error: any) {
       console.error("Error fetching stats:", error);
-      setError(error.message || "Failed to fetch stats");
+      // Only set error on non-silent calls to avoid disrupting UI
+      if (!silent) {
+        setError(error.message || "Failed to fetch stats");
+      }
     } finally {
-      setLoading((prev) => ({ ...prev, stats: false }));
+      if (shouldShowLoading) {
+        setLoading((prev) => ({ ...prev, stats: false }));
+      }
       requestInProgress.current.stats = false;
     }
-  }, []);
+  }, [hasInitialData.stats]);
 
-  const getVolunteerTasks = useCallback(async () => {
+  const getVolunteerTasks = useCallback(async (silent = false) => {
     if (requestInProgress.current.tasks) return;
     requestInProgress.current.tasks = true;
-    setLoading((prev) => ({ ...prev, tasks: true }));
-    setError(null);
+
+    const shouldShowLoading = !silent && !hasInitialData.tasks;
+    
+    if (shouldShowLoading) {
+      setLoading((prev) => ({ ...prev, tasks: true }));
+    }
+
+    if (!silent) {
+      setError(null);
+    }
+
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
+      
       const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/volunteer/tasks`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("Tasks Response:", response.data);
+      
       setVolunteerTasks(response.data || []);
+
+      if (!hasInitialData.tasks) {
+        setHasInitialData(prev => ({ ...prev, tasks: true }));
+      }
+
     } catch (error: any) {
       console.error("Error fetching tasks:", error);
-      setError(error.message || "Failed to fetch tasks");
+      if (!silent) {
+        setError(error.message || "Failed to fetch tasks");
+      }
     } finally {
-      setLoading((prev) => ({ ...prev, tasks: false }));
+      if (shouldShowLoading) {
+        setLoading((prev) => ({ ...prev, tasks: false }));
+      }
       requestInProgress.current.tasks = false;
     }
-  }, []);
+  }, [hasInitialData.tasks]);
+
+  const getNotifications = useCallback(async (silent = false) => {
+    if (requestInProgress.current.notifications) return;
+    requestInProgress.current.notifications = true;
+
+    const shouldShowLoading = !silent && !hasInitialData.notifications;
+    
+    if (shouldShowLoading) {
+      setLoading((prev) => ({ ...prev, notifications: true }));
+    }
+
+    if (!silent) {
+      setError(null);
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No authentication token found");
+      
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/volunteer/notifications`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      setNotifications(response.data || []);
+
+      if (!hasInitialData.notifications) {
+        setHasInitialData(prev => ({ ...prev, notifications: true }));
+      }
+
+    } catch (error: any) {
+      console.error("Error fetching notifications:", error);
+      if (!silent) {
+        setError(error.message || "Failed to fetch notifications");
+      }
+    } finally {
+      if (shouldShowLoading) {
+        setLoading((prev) => ({ ...prev, notifications: false }));
+      }
+      requestInProgress.current.notifications = false;
+    }
+  }, [hasInitialData.notifications]);
 
   const updateTaskStatus = useCallback(async (taskId: string, status: Task["status"]) => {
     if (requestInProgress.current.updating) return;
     requestInProgress.current.updating = true;
     setLoading((prev) => ({ ...prev, updating: true }));
     setError(null);
+
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
+      
       console.log("Updating task:", { taskId, status });
       const response = await axios.patch(
         `${import.meta.env.VITE_API_BASE_URL}/volunteer/tasks/${taskId}/status`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      
       console.log("Update Status Response:", response.data);
-      await getVolunteerTasks(); // Refresh tasks after update
+      
+      // Refresh tasks silently after update
+      await getVolunteerTasks(true);
+      await getVolunteerStats(true);
+      
     } catch (error: any) {
       console.error("Error updating task status:", error);
       throw new Error(error.response?.data?.message || "Failed to update task status");
@@ -141,42 +243,28 @@ export function VolunteerProvider({ children }: { children: React.ReactNode }) {
       setLoading((prev) => ({ ...prev, updating: false }));
       requestInProgress.current.updating = false;
     }
-  }, [getVolunteerTasks]);
-
-  const getNotifications = useCallback(async () => {
-    if (requestInProgress.current.notifications) return;
-    requestInProgress.current.notifications = true;
-    setLoading((prev) => ({ ...prev, notifications: true }));
-    setError(null);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found");
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/volunteer/notifications`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setNotifications(response.data);
-    } catch (error: any) {
-      console.error("Error fetching notifications:", error);
-      setError(error.message || "Failed to fetch notifications");
-    } finally {
-      setLoading((prev) => ({ ...prev, notifications: false }));
-      requestInProgress.current.notifications = false;
-    }
-  }, []);
+  }, [getVolunteerTasks, getVolunteerStats]);
 
   const markNotificationAsRead = useCallback(async (notificationId: string) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
-      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/volunteer/notifications/${notificationId}/read`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      
+      await axios.patch(
+        `${import.meta.env.VITE_API_BASE_URL}/volunteer/notifications/${notificationId}/read`, 
+        {}, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Update local state immediately for better UX
       setNotifications((prev) =>
         prev.map((n) => (n._id === notificationId ? { ...n, read: true } : n))
       );
+      
     } catch (error: any) {
       console.error("Error marking notification as read:", error);
-      setError(error.message || "Failed to mark notification as read");
+      // Silently fail for better UX - don't show error for this action
+      console.warn("Failed to mark notification as read, but continuing...");
     }
   }, []);
 

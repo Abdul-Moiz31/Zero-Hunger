@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 interface NGOStats {
   totalVolunteers: number;
@@ -67,7 +68,7 @@ export function useNGOContext() {
 
 export function NGOProvider({ children }: { children: React.ReactNode }) {
   const [stats, setStats] = useState<NGOStats>({
-    Volunteers: 0,
+  totalVolunteers: 0,
     total_donations: 0,
     pendingDonations: 0,
   });
@@ -121,6 +122,7 @@ export function NGOProvider({ children }: { children: React.ReactNode }) {
       setNotifications((prev) =>
         prev.map((n) => (n._id === notificationId ? { ...n, read: true } : n))
       );
+      toast.success("Notification marked as read");
     } catch (error) {
       console.error("Failed to mark NGO notification as read:", error);
     }
