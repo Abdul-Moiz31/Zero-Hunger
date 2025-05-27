@@ -9,7 +9,7 @@ router.get('/volunteers', authMiddleware(['ngo']), getMyVolunteers);
 router.post("/claim/food", authMiddleware(['ngo']), claimFood);
 router.get("/claimed/foods", authMiddleware(['ngo']), getClaimedFoods);
 router.get("/stats", authMiddleware(['ngo']), getNgoStats);
-router.post('/assign/volunteer', authMiddleware(['ngo']), assignVolunteerToFood);
+router.post('/assign-volunteer', authMiddleware(['ngo']), assignVolunteerToFood);
 router.delete('/volunteers/:id', authMiddleware(['ngo']), deleteVolunteer);
 router.put('/volunteers/:id', authMiddleware(['ngo']), updateVolunteer);
 router.post('/volunteers', authMiddleware(['ngo']), addVolunteer);
@@ -18,6 +18,7 @@ router.delete("/claimed-food/:id", authMiddleware(["ngo"]), deleteClaimedFood);
 router.get('/notifications', authMiddleware(['ngo']), async (req, res) => {
   try {
     const notifications = await Notification.find({ recipientId: req.user.id }).sort({ createdAt: -1 });
+    
     res.status(200).json(notifications);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch notifications", error });
