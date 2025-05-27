@@ -12,11 +12,11 @@ import {
   Trash2,
   Bell,
 } from "lucide-react";
-import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
 
-interface FoodListing {
-  id: string;
+// Define interfaces based on context
+interface Donation {
+  _id: string;
   title: string;
   description: string;
   quantity: number;
@@ -24,11 +24,27 @@ interface FoodListing {
   expiry_time: string;
   pickup_window_start: string;
   pickup_window_end: string;
-  status: "available" | "assigned" | "completed"| "In Progress" ;
+  status: "available" | "assigned" | "completed";
   temperature_requirements?: string;
   dietary_info?: string;
+  img?: string;
   pickup_location?: string;
-  ngoId?: string;
+  createdAt?: string;
+}
+
+interface Notification {
+  _id: string;
+  recipientId: string;
+  message: string;
+  taskId: { _id: string; title: string };
+  read: boolean;
+  createdAt: string;
+}
+
+interface DonorStats {
+  totalDonations: number;
+  pendingDonations: number;
+  completedDonations: number;
 }
 
 interface FormData {
@@ -45,19 +61,7 @@ interface FormData {
   img?: File | null;
 }
 
-type DonationFields = {
-  title: string;
-  description: string;
-  quantity: string;
-  unit: string;
-  expiry_time: string;
-  pickup_window_start: string;
-  pickup_window_end: string;
-  temperature_requirements: string;
-  dietary_info: string;
-  pickup_location: string;
-  img?: File | null;
-};
+type DonationFields = FormData;
 
 const DonationForm = ({
   onClose,
@@ -70,6 +74,7 @@ const DonationForm = ({
 }) => {
   const [formData, setFormData] = useState<DonationFields>(initialFormData);
   const [formErrors, setFormErrors] = useState<Partial<FormData>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = () => {
     const errors: Partial<FormData> = {};
@@ -123,29 +128,18 @@ const DonationForm = ({
     }
   };
 
- const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    const data = new FormData();
-    data.append("title", formData.title);
-    data.append("description", formData.description);
-    data.append("quantity", formData.quantity);
-    data.append("unit", formData.unit);
-    data.append("expiry_time", formData.expiry_time);
-    data.append("pickup_window_start", formData.pickup_window_start);
-    data.append("pickup_window_end", formData.pickup_window_end);
-    data.append("temperature_requirements", formData.temperature_requirements);
-    data.append("dietary_info", formData.dietary_info);
-    data.append("pickup_location", formData.pickup_location);
-    data.append("status", "available");
-    if (formData.img) {
-      data.append("img", formData.img);
+    setIsSubmitting(true);
+    try {
+      await onSubmit(e, formData);
+    } finally {
+      setIsSubmitting(false);
     }
-    onSubmit(e, data);
-    setFormData(initialFormData);
   };
 
- return (
+  return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
       <div className="bg-white rounded-xl p-4 sm:p-6 w-full max-w-lg sm:max-w-2xl animate-scaleIn overflow-y-auto max-h-[90vh]">
         <div className="flex justify-between items-center mb-4">
@@ -155,6 +149,7 @@ const DonationForm = ({
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 transition-colors"
+            aria-label="Close donation form"
           >
             <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
@@ -174,8 +169,9 @@ const DonationForm = ({
                 onChange={handleFormChange}
                 className={`w-full p-2 border ${
                   formErrors.title ? "border-red-500" : "border-gray-300"
-                } rounded-lg text-sm sm:text-base`}
+                } rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                 required
+                disabled={isSubmitting}
               />
               {formErrors.title && (
                 <p className="text-red-500 text-xs mt-1">{formErrors.title}</p>
@@ -195,9 +191,10 @@ const DonationForm = ({
                   onChange={handleFormChange}
                   className={`flex-1 p-2 border ${
                     formErrors.quantity ? "border-red-500" : "border-gray-300"
-                  } rounded-lg text-sm sm:text-base`}
+                  } rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                   required
                   min="1"
+                  disabled={isSubmitting}
                 />
                 <select
                   name="unit"
@@ -205,7 +202,8 @@ const DonationForm = ({
                   onChange={handleFormChange}
                   className={`w-full sm:w-32 p-2 border ${
                     formErrors.unit ? "border-red-500" : "border-gray-300"
-                  } rounded-lg text-sm sm:text-base`}
+                  } rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                  disabled={isSubmitting}
                 >
                   <option value="meals">Meals</option>
                   <option value="kg">Kilograms</option>
@@ -213,7 +211,9 @@ const DonationForm = ({
                 </select>
               </div>
               {formErrors.quantity && (
-                <p className="text-red-500 text-xs mt-1">{formErrors.quantity}</p>
+                <p className="text-red-500 text-xs mt-1">
+                  {formErrors.quantity}
+                </p>
               )}
               {formErrors.unit && (
                 <p className="text-red-500 text-xs mt-1">{formErrors.unit}</p>
@@ -231,12 +231,15 @@ const DonationForm = ({
                 onChange={handleFormChange}
                 className={`w-full p-2 border ${
                   formErrors.description ? "border-red-500" : "border-gray-300"
-                } rounded-lg text-sm sm:text-base`}
+                } rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                 rows={3}
                 required
+                disabled={isSubmitting}
               />
               {formErrors.description && (
-                <p className="text-red-500 text-xs mt-1">{formErrors.description}</p>
+                <p className="text-red-500 text-xs mt-1">
+                  {formErrors.description}
+                </p>
               )}
             </div>
 
@@ -252,12 +255,15 @@ const DonationForm = ({
                 onChange={handleFormChange}
                 className={`w-full p-2 border ${
                   formErrors.expiry_time ? "border-red-500" : "border-gray-300"
-                } rounded-lg text-sm sm:text-base`}
+                } rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                 required
                 min={new Date().toISOString().slice(0, 16)}
+                disabled={isSubmitting}
               />
               {formErrors.expiry_time && (
-                <p className="text-red-500 text-xs mt-1">{formErrors.expiry_time}</p>
+                <p className="text-red-500 text-xs mt-1">
+                  {formErrors.expiry_time}
+                </p>
               )}
             </div>
 
@@ -270,7 +276,8 @@ const DonationForm = ({
                 name="temperature_requirements"
                 value={formData.temperature_requirements}
                 onChange={handleFormChange}
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm sm:text-base"
+                className="w-full p-2 border border-gray-300 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                disabled={isSubmitting}
               />
             </div>
 
@@ -284,13 +291,18 @@ const DonationForm = ({
                 value={formData.pickup_window_start}
                 onChange={handleFormChange}
                 className={`w-full p-2 border ${
-                  formErrors.pickup_window_start ? "border-red-500" : "border-gray-300"
-                } rounded-lg text-sm sm:text-base`}
+                  formErrors.pickup_window_start
+                    ? "border-red-500"
+                    : "border-gray-300"
+                } rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                 required
                 min={new Date().toISOString().slice(0, 16)}
+                disabled={isSubmitting}
               />
               {formErrors.pickup_window_start && (
-                <p className="text-red-500 text-xs mt-1">{formErrors.pickup_window_start}</p>
+                <p className="text-red-500 text-xs mt-1">
+                  {formErrors.pickup_window_start}
+                </p>
               )}
             </div>
 
@@ -304,13 +316,21 @@ const DonationForm = ({
                 value={formData.pickup_window_end}
                 onChange={handleFormChange}
                 className={`w-full p-2 border ${
-                  formErrors.pickup_window_end ? "border-red-500" : "border-gray-300"
-                } rounded-lg text-sm sm:text-base`}
+                  formErrors.pickup_window_end
+                    ? "border-red-500"
+                    : "border-gray-300"
+                } rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                 required
-                min={formData.pickup_window_start || new Date().toISOString().slice(0, 16)}
+                min={
+                  formData.pickup_window_start ||
+                  new Date().toISOString().slice(0, 16)
+                }
+                disabled={isSubmitting}
               />
               {formErrors.pickup_window_end && (
-                <p className="text-red-500 text-xs mt-1">{formErrors.pickup_window_end}</p>
+                <p className="text-red-500 text-xs mt-1">
+                  {formErrors.pickup_window_end}
+                </p>
               )}
             </div>
 
@@ -324,7 +344,8 @@ const DonationForm = ({
                 name="dietary_info"
                 value={formData.dietary_info}
                 onChange={handleFormChange}
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm sm:text-base"
+                className="w-full p-2 border border-gray-300 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                disabled={isSubmitting}
               />
             </div>
 
@@ -339,12 +360,17 @@ const DonationForm = ({
                 value={formData.pickup_location}
                 onChange={handleFormChange}
                 className={`w-full p-2 border ${
-                  formErrors.pickup_location ? "border-red-500" : "border-gray-300"
-                } rounded-lg text-sm sm:text-base`}
+                  formErrors.pickup_location
+                    ? "border-red-500"
+                    : "border-gray-300"
+                } rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent`}
                 required
+                disabled={isSubmitting}
               />
               {formErrors.pickup_location && (
-                <p className="text-red-500 text-xs mt-1">{formErrors.pickup_location}</p>
+                <p className="text-red-500 text-xs mt-1">
+                  {formErrors.pickup_location}
+                </p>
               )}
             </div>
 
@@ -357,7 +383,8 @@ const DonationForm = ({
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm sm:text-base"
+                className="w-full p-2 border border-gray-300 rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -367,15 +394,17 @@ const DonationForm = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-full sm:w-auto px-3 sm:px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm sm:text-base"
+              className="w-full sm:w-auto px-3 sm:px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm sm:text-base disabled:opacity-50"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm sm:text-base"
+              className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm sm:text-base disabled:opacity-50"
+              disabled={isSubmitting}
             >
-              Create Donation
+              {isSubmitting ? "Creating..." : "Create Donation"}
             </button>
           </div>
         </form>
@@ -385,11 +414,26 @@ const DonationForm = ({
 };
 
 const DonorDashboard = () => {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "donations">(
+    "overview"
+  );
   const [showDonationForm, setShowDonationForm] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const statusOptions = ["available", "in_progress", "assigned", "completed" ]; 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const {
+    stats,
+    donations,
+    notifications,
+    getDonorStats,
+    setDonations,
+    getMyDonations,
+    deleteDonation,
+    updateDonationStatus,
+    getNotifications,
+    markNotificationAsRead,
+  } = useDonorContext();
 
   const initialFormData: FormData = {
     title: "",
@@ -401,24 +445,11 @@ const DonorDashboard = () => {
     pickup_window_end: "",
     temperature_requirements: "",
     dietary_info: "",
-    img: null,
     pickup_location: "",
+    img: null,
   };
 
-  const {
-    stats,
-    donations,
-    notifications,
-    getDonorStats,
-    getMyDonations,
-    deleteDonation,
-    updateDonationStatus,
-    getNotifications,
-    markNotificationAsRead,
-  } = useDonorContext();
-
-  // Calculate unread notifications count for the badge
-  const unreadCount = notifications.filter((notif) => !notif.read).length;
+  const statusOptions = ["available", "assigned", "completed"] as const;
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent, formData: FormData) => {
@@ -426,21 +457,43 @@ const DonorDashboard = () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Authentication token not found");
-        formData.append("status", "available");
 
-        const response = await axios.post(
+        const submissionData = new FormData();
+        submissionData.append("title", formData.title);
+        submissionData.append("description", formData.description);
+        submissionData.append("quantity", formData.quantity);
+        submissionData.append("unit", formData.unit);
+        submissionData.append("expiry_time", formData.expiry_time);
+        submissionData.append(
+          "pickup_window_start",
+          formData.pickup_window_start
+        );
+        submissionData.append("pickup_window_end", formData.pickup_window_end);
+        submissionData.append(
+          "temperature_requirements",
+          formData.temperature_requirements || ""
+        );
+        submissionData.append("dietary_info", formData.dietary_info || "");
+        submissionData.append("pickup_location", formData.pickup_location);
+        if (formData.img) {
+          submissionData.append("img", formData.img);
+        }
+
+        const response = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/donor/donate`,
-          formData,
           {
+            method: "POST",
             headers: {
-              "Content-Type": "multipart/form-data",
               Authorization: `Bearer ${token}`,
             },
-            withCredentials: true,
+            body: submissionData,
+            credentials: "include",
           }
         );
-        if (response.status === 201 || response.status === 200) {
-          await getMyDonations();
+
+        if (response.status === 201) {
+          const data = await response.json();
+          setDonations((prev) => [data.food, ...prev]);
           setShowDonationForm(false);
           toast.success("Donation created successfully!", {
             duration: 3000,
@@ -453,13 +506,14 @@ const DonorDashboard = () => {
               boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
             },
           });
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to create donation");
         }
       } catch (err: any) {
         console.error("Error uploading donation:", err);
         const errorMessage =
-          err.response?.data?.message ||
-          err.message ||
-          "Failed to create donation. Please try again.";
+          err.message || "Failed to create donation. Please try again.";
         toast.error(errorMessage, {
           duration: 3000,
           position: "top-right",
@@ -473,37 +527,70 @@ const DonorDashboard = () => {
         });
       }
     },
-    [getMyDonations]
+    [setDonations]
   );
 
   useEffect(() => {
-    setIsLoading(true);
-    Promise.all([getDonorStats(), getMyDonations(), getNotifications()]).finally(() =>
-      setIsLoading(false)
-    );
-  }, []);
+    const fetchData = async (retryCount = 0) => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        await Promise.all([
+          getDonorStats(),
+          getMyDonations(),
+          getNotifications(),
+        ]);
+      } catch (err: any) {
+        console.error("Error fetching donor data:", err);
+        const errorMessage =
+          err.message || "Failed to load data. Please try again.";
+        if (err.response?.status === 401 && retryCount < 1) {
+          return fetchData(retryCount + 1);
+        }
+        setError(errorMessage);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [getDonorStats, getMyDonations, getNotifications]);
 
-const Overview = () => (
+  const Overview = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <DashboardCard
           icon={Package2}
           title="Total Donations"
-          stats={[{ label: "Total Donations", value: String(stats.totalDonations || 0) }]}
+          stats={[
+            {
+              label: "Total Donations",
+              value: String(stats.totalDonations || 0),
+            },
+          ]}
           trend="+3 this week"
           trendUp={true}
         />
         <DashboardCard
           icon={Clock}
           title="Pending Pickups"
-          stats={[{ label: "Pending Pickups", value: String(stats.pendingDonations || 0) }]}
+          stats={[
+            {
+              label: "Pending Pickups",
+              value: String(stats.pendingDonations || 0),
+            },
+          ]}
           trend="2 expiring soon"
           trendUp={false}
         />
         <DashboardCard
           icon={CheckCircle}
           title="Completed"
-          stats={[{ label: "Completed Donations", value: String(stats.completedDonations || 0) }]}
+          stats={[
+            {
+              label: "Completed Donations",
+              value: String(stats.completedDonations || 0),
+            },
+          ]}
           trend="+12% this month"
           trendUp={true}
         />
@@ -514,7 +601,7 @@ const Overview = () => (
           Recent Donations
         </h2>
         <div className="space-y-4">
-          {donations.slice(0, 10).map((donation) => (
+          {donations.slice(0, 10).map((donation: Donation) => (
             <div
               key={donation._id}
               className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b pb-4 last:border-b-0 gap-4"
@@ -524,20 +611,27 @@ const Overview = () => (
                   <Package2 className="w-4 sm:w-5 h-4 sm:h-5 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-800 text-sm sm:text-base">{donation.title}</h3>
+                  <h3 className="font-semibold text-gray-800 text-sm sm:text-base">
+                    {donation.title}
+                  </h3>
                   <p className="text-xs sm:text-sm text-gray-500">
-                    {donation.quantity} {donation.unit || "items"}
+                    {donation.quantity} {donation.unit}
                   </p>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400 mt-1">
                     <span className="flex items-center">
                       <Calendar className="w-3 sm:w-4 h-3 sm:h-4 mr-1" />
-                      {new Date(donation.pickup_window_start).toLocaleDateString()}
+                      {new Date(
+                        donation.pickup_window_start
+                      ).toLocaleDateString()}
                     </span>
                     <span className="flex items-center">
                       <Clock3 className="w-3 sm:w-4 h-3 sm:h-4 mr-1" />
-                      {new Date(donation.pickup_window_start).toLocaleTimeString([], {
+                      {new Date(
+                        donation.pickup_window_start
+                      ).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
+                        timeZone: "Asia/Karachi",
                       })}
                     </span>
                   </div>
@@ -551,72 +645,69 @@ const Overview = () => (
                     ? "bg-blue-100 text-blue-700"
                     : donation.status === "completed"
                     ? "bg-gray-200 text-gray-700"
-                    : "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-700"
                 }`}
               >
-                {donation.status.charAt(0).toUpperCase() + donation.status.slice(1)}
+                {donation.status.charAt(0).toUpperCase() +
+                  donation.status.slice(1)}
               </span>
             </div>
           ))}
           {donations.length === 0 && (
-            <p className="text-gray-500 text-center py-4 text-sm sm:text-base">No recent donations available.</p>
+            <p className="text-gray-500 text-center py-4 text-sm sm:text-base">
+              No recent donations available.
+            </p>
           )}
         </div>
       </div>
     </div>
   );
 
-  const DonationsList = useCallback(() => {
+  const DonationsList = () => {
     const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-    const handleStatusChange = async (id: string, newStatus: string, ngoId?: string) => {
-      await updateDonationStatus(id, newStatus, ngoId);
-      setEditingStatusId(null);
+    const handleStatusChange = async (id: string, newStatus: string) => {
+      setActionLoading(id);
+      try {
+        await updateDonationStatus(id, newStatus);
+      } catch (err: any) {
+        console.error("Error updating status:", err);
+        toast.error("Failed to update donation status.", {
+          duration: 3000,
+          position: "top-right",
+        });
+      } finally {
+        setActionLoading(null);
+        setEditingStatusId(null);
+      }
     };
 
-    const handleClaimDonation = async (id: string) => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("Authentication token not found", {
-          duration: 3000,
-          position: "top-right",
-        });
-        return;
-      }
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const handleDelete = async (id: string) => {
+      setActionLoading(id);
       try {
-        await axios.put(
-          `${import.meta.env.VITE_API_BASE_URL}/donor/donation/${id}/status`,
-          { status: "assigned", ngoId: user._id },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            withCredentials: true,
-          }
-        );
-        await getMyDonations(); 
-        await getNotifications(); 
-        toast.success("Donation claimed successfully!", {
+        await deleteDonation(id);
+      } catch (err: any) {
+        console.error("Error deleting donation:", err);
+        toast.error("Failed to delete donation.", {
           duration: 3000,
           position: "top-right",
         });
-      } catch (error) {
-        console.error("Error claiming donation:", error);
-        toast.error("Failed to claim donation.", {
-          duration: 3000,
-          position: "top-right",
-        });
+      } finally {
+        setActionLoading(null);
       }
     };
 
     return (
       <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800">All Donations</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+            All Donations
+          </h2>
           <button
             onClick={() => setShowDonationForm(true)}
             className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-medium px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition duration-300 text-sm sm:text-base"
+            aria-label="Create new donation"
           >
             <Plus className="w-4 sm:w-5 h-4 sm:h-5" />
             <span>New Donation</span>
@@ -627,47 +718,73 @@ const Overview = () => (
           <table className="min-w-[640px] w-full bg-white text-sm text-gray-700">
             <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
               <tr>
-                <th className="p-3 sm:p-4 text-left">Title</th>
-                <th className="p-3 sm:p-4 text-left">Quantity</th>
-                <th className="p-3 sm:p-4 text-left">Pickup Window</th>
-                <th className="p-3 sm:p-4 text-left">Expiry Time</th>
-                <th className="p-3 sm:p-4 text-left">Pickup Location</th>
-                <th className="p-3 sm:p-4 text-left">Status</th>
-                <th className="p-3 sm:p-4 text-left">Actions</th>
+                <th scope="col" className="p-3 sm:p-4 text-left">
+                  Title
+                </th>
+                <th scope="col" className="p-3 sm:p-4 text-left">
+                  Quantity
+                </th>
+                <th scope="col" className="p-3 sm:p-4 text-left">
+                  Pickup Window
+                </th>
+                <th scope="col" className="p-3 sm:p-4 text-left">
+                  Expiry Time
+                </th>
+                <th scope="col" className="p-3 sm:p-4 text-left">
+                  Pickup Location
+                </th>
+                <th scope="col" className="p-3 sm:p-4 text-left">
+                  Status
+                </th>
+                <th scope="col" className="p-3 sm:p-4 text-left">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
-              {donations.map((donation) => (
+              {donations.map((donation: Donation) => (
                 <tr
                   key={donation._id}
                   className="border-t hover:bg-gray-50 transition duration-200"
                 >
-                  <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">{donation.title}</td>
                   <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
-                    {donation.quantity} {donation.unit || "items"}
+                    {donation.title}
                   </td>
                   <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
-                    {`${new Date(donation.pickup_window_start).toLocaleString()} - ${new Date(
-                      donation.pickup_window_end
-                    ).toLocaleString()}`}
+                    {donation.quantity} {donation.unit}
                   </td>
                   <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
-                    {new Date(donation.expiry_time).toLocaleString()}
+                    {`${new Date(donation.pickup_window_start).toLocaleString(
+                      [],
+                      { timeZone: "Asia/Karachi" }
+                    )} - ${new Date(donation.pickup_window_end).toLocaleString(
+                      [],
+                      { timeZone: "Asia/Karachi" }
+                    )}`}
                   </td>
-                  <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">{donation.pickup_location}</td>
+                  <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
+                    {new Date(donation.expiry_time).toLocaleString([], {
+                      timeZone: "Asia/Karachi",
+                    })}
+                  </td>
+                  <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
+                    {donation.pickup_location}
+                  </td>
                   <td className="px-3 sm:px-4 py-2 sm:py-3">
                     <select
                       value={donation.status}
-                      onChange={(e) => handleStatusChange(donation._id, e.target.value)}
-                      className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold ${
+                      onChange={(e) => {
+                        setEditingStatusId(donation._id);
+                        handleStatusChange(donation._id, e.target.value);
+                      }}
+                      className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                         donation.status === "available"
                           ? "bg-green-100 text-green-700"
-                          : donation.status === "completed"
-                          ? "bg-gray-100 text-gray-800"
                           : donation.status === "assigned"
                           ? "bg-blue-100 text-blue-700"
-                          :"bg-green-100 text-green-700"
+                          : "bg-gray-200 text-gray-700"
                       }`}
+                      disabled={actionLoading === donation._id}
                     >
                       {statusOptions.map((status) => (
                         <option key={status} value={status}>
@@ -678,9 +795,11 @@ const Overview = () => (
                   </td>
                   <td className="px-3 sm:px-4 py-2 sm:py-3">
                     <button
-                      onClick={() => deleteDonation(donation._id)}
-                      className="text-red-600 hover:text-red-800 transition"
-                      title="Delete"
+                      onClick={() => handleDelete(donation._id)}
+                      className="text-red-600 hover:text-red-800 transition disabled:opacity-50"
+                      title="Delete donation"
+                      aria-label={`Delete donation ${donation.title}`}
+                      disabled={actionLoading === donation._id}
                     >
                       <Trash2 className="w-4 sm:w-5 h-4 sm:h-5" />
                     </button>
@@ -689,7 +808,10 @@ const Overview = () => (
               ))}
               {donations.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 sm:px-4 py-2 sm:py-3 text-center text-gray-500 text-sm sm:text-base">
+                  <td
+                    colSpan={7}
+                    className="px-3 sm:px-4 py-2 sm:py-3 text-center text-gray-500 text-sm sm:text-base"
+                  >
                     No donations available.
                   </td>
                 </tr>
@@ -699,7 +821,94 @@ const Overview = () => (
         </div>
       </div>
     );
-  }, [donations, deleteDonation, updateDonationStatus, getMyDonations, getNotifications, statusOptions]);
+  };
+
+  const NotificationsDropdown = () => {
+    const handleMarkAsRead = async (id: string) => {
+      try {
+        await markNotificationAsRead(id);
+      } catch (err: any) {
+        console.error("Error marking notification as read:", err);
+        toast.error("Failed to mark notification as read.", {
+          duration: 3000,
+          position: "top-right",
+        });
+      }
+    };
+
+    return (
+      <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+        <div className="flex justify-between items-center p-4 border-b">
+          <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+          <button
+            onClick={() => setShowNotifications(false)}
+            className="text-gray-500 hover:text-gray-700"
+            aria-label="Close notifications"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-4 space-y-3">
+          {notifications.length === 0 ? (
+            <p className="text-gray-500 text-center text-sm">
+              No notifications available.
+            </p>
+          ) : (
+            notifications.map((notification: Notification) => (
+              <div
+                key={notification._id}
+                className={`p-3 rounded-lg border ${
+                  notification.read ? "bg-gray-50" : "bg-blue-50"
+                }`}
+              >
+                <p
+                  className={`text-sm ${
+                    notification.read
+                      ? "text-gray-600"
+                      : "text-gray-800 font-medium"
+                  }`}
+                >
+                  {notification.message}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {new Date(notification.createdAt).toLocaleString([], {
+                    timeZone: "Asia/Karachi",
+                  })}
+                </p>
+                {!notification.read && (
+                  <button
+                    onClick={() => handleMarkAsRead(notification._id)}
+                    className="text-blue-600 hover:text-blue-800 text-xs mt-1"
+                  >
+                    Mark as Read
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const styles = `
+    .animate-scaleIn {
+      animation: scaleIn 0.3s ease-out;
+    }
+    @keyframes scaleIn {
+      0% { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  `;
+
+  useEffect(() => {
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = styles;
+    document.head.appendChild(styleSheet);
+    return () => {
+      document.head.removeChild(styleSheet);
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -709,11 +918,42 @@ const Overview = () => (
     );
   }
 
- return (
+  if (error) {
+    return (
+      <div className="text-center p-6 text-red-600">
+        {error}
+        <button
+          onClick={() => {
+            setIsLoading(true);
+            setError(null);
+            Promise.all([
+              getDonorStats(),
+              getMyDonations(),
+              getNotifications(),
+            ]).catch((err: any) => {
+              setError(err.message || "Failed to load data. Please try again.");
+              setIsLoading(false);
+            });
+          }}
+          className="ml-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  const unreadCount = notifications.filter(
+    (notif: Notification) => !notif.read
+  ).length;
+
+  return (
     <div className="p-4 sm:p-6">
       <Toaster />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Donor Dashboard</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+          Donor Dashboard
+        </h1>
         <div className="flex items-center gap-2">
           <div className="flex flex-wrap gap-2">
             <button
@@ -723,6 +963,7 @@ const Overview = () => (
                   ? "bg-green-600 text-white"
                   : "text-gray-600 hover:bg-gray-300"
               }`}
+              aria-label="Switch to Overview tab"
             >
               Overview
             </button>
@@ -733,15 +974,16 @@ const Overview = () => (
                   ? "bg-green-600 text-white"
                   : "text-gray-600 hover:bg-gray-300"
               }`}
+              aria-label="Switch to My Donations tab"
             >
               My Donations
             </button>
           </div>
-          {/* Bell Icon with Notification Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="p-2 rounded-full hover:bg-gray-200 transition duration-300 relative"
+              aria-label={`Toggle notifications (${unreadCount} unread)`}
             >
               <Bell className="w-5 h-5 text-gray-600" />
               {unreadCount > 0 && (
@@ -750,50 +992,7 @@ const Overview = () => (
                 </span>
               )}
             </button>
-            {showNotifications && (
-  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
-    <div className="flex justify-between items-center p-4 border-b">
-      <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
-      <button
-        onClick={() => setShowNotifications(false)}
-        className="text-gray-500 hover:text-gray-700"
-      >
-        <X className="w-5 h-5" />
-      </button>
-    </div>
-    <div className="p-4 space-y-3">
-      {notifications.length === 0 ? (
-        <p className="text-gray-500 text-center text-sm">
-          No notifications available.
-        </p>
-      ) : (
-        notifications.map((notification) => (
-          <div
-            key={notification._id}
-            className={`p-3 rounded-lg border ${
-              notification.read ? "bg-gray-50" : "bg-blue-50"
-            }`}
-          >
-            <p className={`text-sm ${notification.read ? "text-gray-600" : "text-gray-800 font-medium"}`}>
-              {notification.message}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              {new Date(notification.createdAt).toLocaleString()}
-            </p>
-            {!notification.read && (
-              <button
-                onClick={() => markNotificationAsRead(notification._id)}
-                className="text-blue-600 hover:text-blue-800 text-xs mt-1"
-              >
-                Mark as Read
-              </button>
-            )}
-          </div>
-        ))
-      )}
-    </div>
-  </div>
-)}
+            {showNotifications && <NotificationsDropdown />}
           </div>
         </div>
       </div>
@@ -828,14 +1027,20 @@ const DashboardCard = ({
       <div className="bg-green-100 p-2 sm:p-3 rounded-lg">
         <Icon className="w-5 sm:w-6 h-5 sm:h-6 text-green-600" />
       </div>
-      <h3 className="text-base sm:text-lg font-semibold text-gray-800">{title}</h3>
+      <h3 className="text-base sm:text-lg font-semibold text-gray-800">
+        {title}
+      </h3>
     </div>
     <div className="space-y-3 sm:space-y-4">
       {stats.length > 0 ? (
         stats.map((stat) => (
           <div key={stat.label} className="flex justify-between items-center">
-            <span className="text-gray-600 text-sm sm:text-base">{stat.label}</span>
-            <span className="font-semibold text-sm sm:text-base">{stat.value}</span>
+            <span className="text-gray-600 text-sm sm:text-base">
+              {stat.label}
+            </span>
+            <span className="font-semibold text-sm sm:text-base">
+              {stat.value}
+            </span>
           </div>
         ))
       ) : (
@@ -843,7 +1048,9 @@ const DashboardCard = ({
       )}
       {trend && (
         <p
-          className={`text-xs sm:text-sm ${trendUp ? "text-green-600" : "text-gray-600"}`}
+          className={`text-xs sm:text-sm ${
+            trendUp ? "text-green-600" : "text-gray-600"
+          }`}
         >
           {trend}
         </p>

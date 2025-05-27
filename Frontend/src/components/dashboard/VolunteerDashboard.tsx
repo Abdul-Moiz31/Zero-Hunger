@@ -103,23 +103,19 @@ const VolunteerDashboard = () => {
     }
   }, [notifications, lastNotificationCount]);
 
-  const handleNotificationClick = async () => {
+ const handleNotificationClick = async () => {
     setShowNotifications(!showNotifications);
-    
-    // Mark all unread notifications as read when opening the panel
-    if (!showNotifications) {
-      const unreadNotifications = notifications.filter((n) => !n.read);
-      if (unreadNotifications.length > 0) {
-        try {
-          await Promise.all(
-            unreadNotifications.map((n) => markNotificationAsRead(n._id))
-          );
-          // Refresh notifications after marking as read
-          await getNotifications();
-        } catch (err) {
-          console.error("Failed to mark notifications as read:", err);
-        }
-      }
+  };
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await markNotificationAsRead(notificationId);
+      // Refresh notifications after marking as read
+      await getNotifications();
+      toast.success("Notification marked as read");
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+      toast.error("Failed to mark notification as read");
     }
   };
 
@@ -129,7 +125,7 @@ const VolunteerDashboard = () => {
       return;
     }
     
-    console.log("Sending status update:", { taskId, newStatus });
+    // console.log("Sending status update:", { taskId, newStatus });
     
     try {
       await updateTaskStatus(taskId, newStatus);
@@ -320,6 +316,7 @@ const VolunteerDashboard = () => {
   };
 
   // Get unread notification count
+  // Get unread notification count
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
@@ -379,17 +376,26 @@ const VolunteerDashboard = () => {
                           n.read 
                             ? "bg-gray-50 hover:bg-gray-100" 
                             : "bg-blue-50 hover:bg-blue-100 border-l-4 border-blue-500"
-                        } cursor-pointer`}
-                        onClick={() => markNotificationAsRead(n._id)}
+                        } cursor-pointer flex justify-between items-start`}
                       >
-                        <p className={`text-sm ${n.read ? 'text-gray-700' : 'text-gray-900 font-medium'}`}>
-                          {n.message}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {new Date(n.createdAt).toLocaleString()}
-                        </p>
+                        <div>
+                          <p className={`text-sm ${n.read ? 'text-gray-700' : 'text-gray-900 font-medium'}`}>
+                            {n.message}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {new Date(n.createdAt).toLocaleString()}
+                          </p>
+                        </div>
                         {!n.read && (
-                          <div className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent triggering the div's onClick
+                              handleMarkAsRead(n._id);
+                            }}
+                            className="ml-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            Mark as Read
+                          </button>
                         )}
                       </div>
                     ))
@@ -446,7 +452,6 @@ const Badge = ({ status }: { status: string }) => {
     assigned: "bg-blue-100 text-blue-800",
     in_progress: "bg-yellow-100 text-yellow-800",
     completed: "bg-gray-100 text-gray-800",
-    // cancelled: "bg-red-100 text-red-800",
   };
   return (
     <span className={`px-3 py-1 rounded-full text-sm font-medium ${map[status] || 'bg-gray-100 text-gray-800'}`}>

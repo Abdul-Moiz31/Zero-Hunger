@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -161,8 +162,9 @@ export function NGOProvider({ children }: { children: React.ReactNode }) {
   async function assignVolunteerToFood(volunteerId: string, foodId: string) {
     try {
       const token = localStorage.getItem("token");
+      if (!token) throw new Error("No authentication token found");
       const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/ngo/assign/volunteer`,
+        `${import.meta.env.VITE_API_BASE_URL}/ngo/assign-volunteer`,
         { volunteerId, foodId },
         {
           headers: {

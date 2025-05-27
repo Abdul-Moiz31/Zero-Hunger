@@ -9,7 +9,7 @@ router.get('/volunteers', authMiddleware(['ngo']), getMyVolunteers);
 router.post("/claim/food", authMiddleware(['ngo']), claimFood);
 router.get("/claimed/foods", authMiddleware(['ngo']), getClaimedFoods);
 router.get("/stats", authMiddleware(['ngo']), getNgoStats);
-router.post('/assign/volunteer', authMiddleware(['ngo']), assignVolunteerToFood);
+router.post('/assign-volunteer', authMiddleware(['ngo']), assignVolunteerToFood);
 router.delete('/volunteers/:id', authMiddleware(['ngo']), deleteVolunteer);
 router.put('/volunteers/:id', authMiddleware(['ngo']), updateVolunteer);
 router.post('/volunteers', authMiddleware(['ngo']), addVolunteer);

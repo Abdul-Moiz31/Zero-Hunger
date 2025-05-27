@@ -347,59 +347,32 @@ export const deleteClaimedFood = async (req: Request, res: Response) => {
 // AssignVolunteerToFood
 
 export const assignVolunteerToFood = async (req: Request, res: Response) => {
-  const { volunteerId, foodId } = req.body;
-  const ngoId = req.user.id;
-
-  if (!volunteerId || !foodId) {
-    return res.status(400).json({ success: false, message: 'Volunteer ID and Food ID are required' });
-  }
-
   try {
-    const updatedFood = await Food.findByIdAndUpdate(
-      foodId,
-      { 
-        volunteerId,
-        status: 'assigned',
-        delivered_time: new Date()
-      },
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedFood) {
-      return res.status(404).json({ success: false, message: 'Food item not found' });
+    const { volunteerId, foodId } = req.body;
+    const food = await Food.findById(foodId).populate("ngoId", "organization_name");
+    if (!food) {
+      return res.status(404).json({ message: "Food item not found" });
     }
 
-    // Fetch the NGO's name
-    const ngo = await User.findById(ngoId);
-    if (!ngo) {
-      return res.status(404).json({ success: false, message: 'NGO not found' });
-    }
-
-    // Fetch the volunteer's name
     const volunteer = await User.findById(volunteerId);
     if (!volunteer) {
-      return res.status(404).json({ success: false, message: 'Volunteer not found' });
+      return res.status(404).json({ message: "Volunteer not found" });
     }
 
-    // Create notification for the NGO
+    food.volunteerId = volunteerId;
+    food.status = "assigned";
+    await food.save();
+
+    // Create a notification for the volunteer
     await Notification.create({
-      recipientId: ngoId, // Changed to NGO's ID
-      message: `Volunteer ${volunteerId} assigned to food donation "${updatedFood.title}".`,
+      recipientId: volunteerId,
+      message: `A new task "${food.title}" has been assigned to you by ${food.ngoId.organization_name}.`,
       taskId: foodId,
-      read: false,
     });
 
-    return res.status(200).json({ 
-      success: true, 
-      message: 'Volunteer assigned successfully', 
-      data: updatedFood 
-    });
+    res.status(200).json({ message: "Volunteer assigned successfully", food });
   } catch (error) {
-    console.error('Error assigning volunteer to food:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Server error while assigning volunteer', 
-      error: error.message 
-    });
+    console.error("Error assigning volunteer:", error);
+    res.status(500).json({ message: "Failed to assign volunteer", error });
   }
 };
