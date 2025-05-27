@@ -57,12 +57,10 @@ export const getMyVolunteers = async (req: Request, res: Response) => {
   }
 };
 
-    // loop to find the count of Food where voluntterid is userid and status is completed
-
 // foodController.js
-export const claimFood = async (req, res) => {
+export const claimFood = async (req: Request, res: Response) => {
   const { foodId } = req.body;
-  const userId = req.user.id; // Assuming user is available from authentication middleware
+  const userId = req.user.id || req.user._id; // Assuming user is available from authentication middleware
   
   if (!foodId) {
     return res.status(400).json({ success: false, message: 'Food ID is required' });
@@ -84,7 +82,18 @@ export const claimFood = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Food listing not found' });
     }
     
-   
+    // Notify the donor about the claim
+    const donor = await User.findById(updatedFood.donorId);
+    if (donor) {
+      await Notification.create({
+        recipientId: updatedFood.donorId,
+        message: `Your donation "${updatedFood.title}" has been claimed by NGO: "${organization_name};
+}".`,
+        taskId: updatedFood._id,
+        read: false,
+      });
+    }
+
     // Return the updated food listing
     return res.status(200).json({ 
       success: true, 
@@ -249,7 +258,7 @@ export const addVolunteer = async (req: Request, res: Response) => {
     const volunteer = new User({
       name,
       email,
-      password: randomPassword, // Will be hashed by pre-save hook
+      password: randomPassword, 
       contact_number,
       role: "volunteer",
       organization_name: ngo.organization_name,
@@ -287,22 +296,31 @@ export const addVolunteer = async (req: Request, res: Response) => {
 };
 
 // Update Food Status
-export const updateFoodStatus = async (req, res) => {
+export const updateFoodStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const validStatuses = ["Pending", "Completed", "Cancelled", "assigned"];
+    const validStatuses = ["available", "in_progress", "assigned", "completed"];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
-    const ngoId = req.user.ngoId;
+    const ngoId = new mongoose.Types.ObjectId(req.user._id || req.user.id);
     const food = await Food.findOneAndUpdate(
       { _id: id, ngoId },
       { status },
       { new: true }
-    );
+    ).populate("volunteerId", "name");
     if (!food) {
       return res.status(404).json({ message: "Food donation not found" });
+    }
+    if (status === "completed" && food.donorId) {
+      const volunteerName = food.volunteerId ? (food.volunteerId as any).name : "no volunteer";
+      await Notification.create({
+        recipientId: food.donorId,
+        message: `Your donation "${food.title}" has been completed by  ${volunteerName}.`,
+        taskId: food._id,
+        read: false,
+      });
     }
     res.status(200).json({ message: "Food status updated successfully", food });
   } catch (error) {
@@ -312,7 +330,7 @@ export const updateFoodStatus = async (req, res) => {
 };
 
 // Delete Claimed Food
-export const deleteClaimedFood = async (req, res) => {
+export const deleteClaimedFood = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const ngoId = req.user.ngoId;
@@ -326,48 +344,35 @@ export const deleteClaimedFood = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-// Assign a volunteer to a food item
+// AssignVolunteerToFood
+
 export const assignVolunteerToFood = async (req: Request, res: Response) => {
-  const { volunteerId, foodId } = req.body;
-  const ngoId = req.user.id;
-
-  if (!volunteerId || !foodId) {
-    return res.status(400).json({ success: false, message: 'Volunteer ID and Food ID are required' });
-  }
-
   try {
-    const updatedFood = await Food.findByIdAndUpdate(
-      foodId,
-      { 
-        volunteerId,
-        status: 'assigned',
-        delivered_time: new Date()
-      },
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedFood) {
-      return res.status(404).json({ success: false, message: 'Food item not found' });
+    const { volunteerId, foodId } = req.body;
+    const food = await Food.findById(foodId).populate("ngoId", "organization_name");
+    if (!food) {
+      return res.status(404).json({ message: "Food item not found" });
     }
 
-    // Create notification for the volunteer
+    const volunteer = await User.findById(volunteerId);
+    if (!volunteer) {
+      return res.status(404).json({ message: "Volunteer not found" });
+    }
+
+    food.volunteerId = volunteerId;
+    food.status = "assigned";
+    await food.save();
+
+    // Create a notification for the volunteer
     await Notification.create({
       recipientId: volunteerId,
-      message: `You have been assigned to the food donation "${updatedFood.title}" by ${req.user.name}.`,
+      message: `A new task "${food.title}" has been assigned to you by ${food.ngoId.organization_name}.`,
       taskId: foodId,
     });
 
-    return res.status(200).json({ 
-      success: true, 
-      message: 'Volunteer assigned successfully', 
-      data: updatedFood 
-    });
+    res.status(200).json({ message: "Volunteer assigned successfully", food });
   } catch (error) {
-    console.error('Error assigning volunteer to food:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Server error while assigning volunteer', 
-      error: error.message 
-    });
+    console.error("Error assigning volunteer:", error);
+    res.status(500).json({ message: "Failed to assign volunteer", error });
   }
 };
