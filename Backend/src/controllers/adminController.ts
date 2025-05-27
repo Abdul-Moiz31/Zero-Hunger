@@ -1,127 +1,134 @@
 import { Request, Response } from "express";
-import User from "../models/User"
+import User from "../models/User";
 import Food from "../models/Food";
 
-// @ts-ignore
-export const getDashboardStats = async (req, res) => {
-    try {
-        // all users
-        const users=await User.find({role: {$ne: "admin"}});
-        const ngoCount=await User.countDocuments({role:"ngo"});
-        const donorCount=await User.countDocuments({role:"donor"});
-        const volunteerCount=await User.countDocuments({role:"volunteer"});
-        const donationCount = await Food.countDocuments()
+// Define types for clarity
+interface UserDocument {
+  _id: string;
+  name: string;
+  email: string;
+  role: "admin" | "donor" | "ngo" | "volunteer";
+  isApproved?: boolean;
+  createdAt: string;
+}
 
-        return res.status(200).json({ngoCount,donorCount,volunteerCount,users , donationCount})
-    }catch(error){
-        res.status(500).json(error)
+interface FoodDonationDocument {
+  _id: string;
+  donorId: { name: string };
+  ngoId?: { name: string };
+  volunteerId?: { name: string };
+  title: string;
+  quantity: number;
+  unit: string;
+  pickup_location: string;
+  createdAt: string;
+}
+
+export const getDashboardStats = async (req: Request, res: Response) => {
+  try {
+    const users = await User.find({ role: { $ne: "admin" } }).lean<UserDocument[]>();
+    const ngoCount = await User.countDocuments({ role: "ngo" });
+    const donorCount = await User.countDocuments({ role: "donor" });
+    const volunteerCount = await User.countDocuments({ role: "volunteer" });
+    const donationCount = await Food.countDocuments();
+
+    return res.status(200).json({ ngoCount, donorCount, volunteerCount, users, donationCount });
+  } catch (error: any) {
+    console.error("getDashboardStats error:", error.message);
+    res.status(500).json({ message: "Server error while fetching dashboard stats", error: error.message });
+  }
+};
+
+export const updateUserStatus = async (req: Request, res: Response) => {
+  try {
+    const { userId, status } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
     }
-}
 
-
-export const updateUserStatus=async (req: Request, res: Response)=>{
-    try{
-       const {userId,status}=req.body;
-
-       if(!userId){
-        return res.status(400).json({message:"User Id required"})
-
-       }
-
-       if(status==undefined){
-         return res.status(400).json({message:"Bad Request"})
-
-       }
-
-
-       const userExist=await User.findById(userId);
-
-       if(!userExist){
-        throw new Error("User does not exist.");
-       }
-
-
-       await User.findByIdAndUpdate(userId,{
-        isApproved:status
-       })
-       
-    res.status(200).json({message:"Status Updated Sucessfully"});       
-    }catch(error){
-        res.status(500).json(error)
+    if (status === undefined) {
+      return res.status(400).json({ message: "Status is required" });
     }
-}
 
+    const userExist = await User.findById(userId);
+    if (!userExist) {
+      return res.status(404).json({ message: "User does not exist" });
+    }
 
-export const deleteUser=async (req: Request, res: Response)=>{
-    try{
-        const {userId}=req.params;
- 
-        if(!userId){
-         return res.status(400).json({message:"User Id required"})
- 
-        }
- 
-        const userExist=await User.findById(userId);
- 
-        if(!userExist){
-         throw new Error("User does not exist.");
-        }
- 
- 
-        await User.findByIdAndDelete(userId)
-        
-     res.status(200).json({message:"User Deleted Sucessfully"});       
-     }catch(error){
-         res.status(500).json(error)
-     }
-}
-// Get all food donations
+    await User.findByIdAndUpdate(userId, { isApproved: status });
+    res.status(200).json({ message: "Status updated successfully" });
+  } catch (error: any) {
+    console.error("updateUserStatus error:", error.message);
+    res.status(500).json({ message: "Server error while updating user status", error: error.message });
+  }
+};
+
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    const userExist = await User.findById(userId);
+    if (!userExist) {
+      return res.status(404).json({ message: "User does not exist" });
+    }
+
+    await User.findByIdAndDelete(userId);
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (error: any) {
+    console.error("deleteUser error:", error.message);
+    res.status(500).json({ message: "Server error while deleting user", error: error.message });
+  }
+};
+
 export const getFoodDonations = async (req: Request, res: Response) => {
-    try {
-        const donations = await Food.find()
-            .populate("donorId", "name")
-            .populate("ngoId", "name")
-            .populate("volunteerId", "name")
-            .lean();
+  try {
+    const donations = await Food.find()
+      .populate("donorId", "name")
+      .populate("ngoId", "name")
+      .populate("volunteerId", "name")
+      .lean<FoodDonationDocument[]>();
 
-        const formattedDonations = donations.map(donation => ({
-            id: donation._id.toString(),
-            donorName: donation.donorId?.name || "Unknown",
-            ngoName: donation.ngoId?.name || "Not Claimed",
-            volunteerName: donation.volunteerId?.name || "Not Assigned",
-            title: donation.title,
-            quantity: donation.quantity,
-            unit: donation.unit,
-            pickup_location: donation.pickup_location,
-            createdAt: donation.createdAt
-        }));
+    const formattedDonations = donations.map((donation) => ({
+      _id: donation._id.toString(),
+      donorName: donation.donorId?.name || "Unknown",
+      ngoName: donation.ngoId?.name || "Not Claimed",
+      volunteerName: donation.volunteerId?.name || "Not Assigned",
+      title: donation.title,
+      quantity: donation.quantity,
+      unit: donation.unit,
+      pickup_location: donation.pickup_location,
+      createdAt: donation.createdAt,
+    }));
 
-        res.status(200).json(formattedDonations);
-    } catch (error) {
-        res.status(500).json(error);
-    }
-}
+    res.status(200).json(formattedDonations);
+  } catch (error: any) {
+    console.error("getFoodDonations error:", error.message);
+    res.status(500).json({ message: "Server error while fetching food donations", error: error.message });
+  }
+};
 
-// Delete food donation
 export const deleteFoodDonation = async (req: Request, res: Response) => {
-    try {
-        const { donationId } = req.params;
+  try {
+    const { donationId } = req.params;
 
-        if (!donationId) {
-            return res.status(400).json({ message: "Donation Id required" });
-        }
-
-        const donationExist = await Food.findById(donationId);
-
-        if (!donationExist) {
-            throw new Error("Donation does not exist.");
-        }
-
-        await Food.findByIdAndDelete(donationId);
-        
-        res.status(200).json({ message: "Donation Deleted Successfully" });
-    } catch (error) {
-        res.status(500).json(error);
+    if (!donationId) {
+      return res.status(400).json({ message: "Donation ID is required" });
     }
-}
 
+    const donationExist = await Food.findById(donationId);
+    if (!donationExist) {
+      return res.status(404).json({ message: "Donation does not exist" });
+    }
+
+    await Food.findByIdAndDelete(donationId);
+    res.status(200).json({ message: "Donation deleted successfully" });
+  } catch (error: any) {
+    console.error("deleteFoodDonation error:", error.message);
+    res.status(500).json({ message: "Server error while deleting food donation", error: error.message });
+  }
+};

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, useState, useCallback, useRef } from "react";
 import axios from "axios";
 
@@ -223,14 +224,14 @@ export function VolunteerProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No authentication token found");
       
-      console.log("Updating task:", { taskId, status });
+      // console.log("Updating task:", { taskId, status });
       const response = await axios.patch(
         `${import.meta.env.VITE_API_BASE_URL}/volunteer/tasks/${taskId}/status`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      console.log("Update Status Response:", response.data);
+      // console.log("Update Status Response:", response.data);
       
       // Refresh tasks silently after update
       await getVolunteerTasks(true);

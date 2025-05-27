@@ -5,8 +5,27 @@ import User from "../models/User";
 import Notification from "../models/Notification";
 import mongoose from "mongoose";
 
+// Define interfaces for request bodies
+interface CreateDonationBody {
+  title: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  expiry_time: string;
+  pickup_window_start: string;
+  pickup_window_end: string;
+  temperature_requirements?: string;
+  dietary_info?: string;
+  pickup_location?: string;
+}
+
+interface UpdateDonationStatusBody {
+  status: "available" | "assigned" | "completed";
+  ngoId?: string;
+}
+
 // Create a new food donation
-export const createDonation = async (req: Request, res: Response) => {
+export const createDonation = async (req: Request<{}, {}, CreateDonationBody>, res: Response) => {
   try {
     const {
       title,
@@ -57,9 +76,9 @@ export const createDonation = async (req: Request, res: Response) => {
     await Promise.all(notificationPromises);
 
     res.status(201).json({ message: "Donation created successfully", food });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating donation:", error);
-    res.status(500).json({ message: "Failed to create donation", error });
+    res.status(500).json({ message: "Failed to create donation", error: error.message });
   }
 };
 
@@ -76,9 +95,9 @@ export const getDonorStats = async (req: Request, res: Response) => {
       pendingDonations,
       completedDonations,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to fetch donor stats:", error);
-    res.status(500).json({ message: "Failed to fetch donor stats", error });
+    res.status(500).json({ message: "Failed to fetch donor stats", error: error.message });
   }
 };
 
@@ -88,14 +107,14 @@ export const getMyDonations = async (req: Request, res: Response) => {
     const donorId = new mongoose.Types.ObjectId(req.user._id || req.user.id);
     const donations = await Food.find({ donorId }).sort({ createdAt: -1 });
     res.status(200).json(donations);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to fetch donations:", error);
-    res.status(500).json({ message: "Failed to fetch donations", error });
+    res.status(500).json({ message: "Failed to fetch donations", error: error.message });
   }
 };
 
 // Delete a donation
-export const deleteDonation = async (req: Request, res: Response) => {
+export const deleteDonation = async (req: Request<{ id: string }>, res: Response) => {
   try {
     const { id } = req.params;
     const donorId = new mongoose.Types.ObjectId(req.user._id || req.user.id);
@@ -107,14 +126,17 @@ export const deleteDonation = async (req: Request, res: Response) => {
 
     await Food.findByIdAndDelete(id);
     res.status(200).json({ message: "Donation deleted successfully" });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error deleting donation:", error);
-    res.status(500).json({ message: "Error deleting donation", error });
+    res.status(500).json({ message: "Error deleting donation", error: error.message });
   }
 };
 
 // Update donation status (e.g., cancel)
-export const updateDonationStatus = async (req: Request, res: Response) => {
+export const updateDonationStatus = async (
+  req: Request<{ id: string }, {}, UpdateDonationStatusBody>,
+  res: Response
+) => {
   try {
     const { id } = req.params;
     const { status, ngoId } = req.body;
@@ -142,58 +164,57 @@ export const updateDonationStatus = async (req: Request, res: Response) => {
       });
     }
 
-    await donation.save();
-
     if (status === "completed") {
-      const volunteer = donation.volunteerId ? await User.findById(donation.volunteerId):
+      const volunteer = donation.volunteerId ? await User.findById(donation.volunteerId) : null;
       await Notification.create({
         recipientId: donation.donorId,
-        message: `Your donation "${donation.title}" has been completed by a volunteer.`,
+        message: `Your donation "${donation.title}" has been completed by ${volunteer ? volunteer.name : "a volunteer"}.`,
         taskId: donation._id,
         read: false,
       });
     }
 
+    await donation.save();
+
     res.status(200).json({ message: "Donation status updated successfully", donation });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to update donation status:", error);
-    res.status(500).json({ message: "Failed to update donation status", error });
+    res.status(500).json({ message: "Failed to update donation status", error: error.message });
   }
 };
 
 // Get notifications
 export const getNotifications = async (req: Request, res: Response) => {
   try {
-    
     const recipientId = new mongoose.Types.ObjectId(req.user._id || req.user.id);
     const notifications = await Notification.find({ recipientId })
       .populate("taskId", "title")
       .sort({ createdAt: -1 });
     res.status(200).json(notifications);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to fetch notifications:", error);
-    res.status(500).json({ message: "Failed to fetch notifications", error });
+    res.status(500).json({ message: "Failed to fetch notifications", error: error.message });
   }
 };
 
 // Mark notification as read
-export const markNotificationAsRead = async (req: Request, res: Response) => {
+export const markNotificationAsRead = async (req: Request<{ notificationId: string }>, res: Response) => {
   try {
-      const { notificationId } = req.params;
-      const recipientId = new mongoose.Types.ObjectId(req.user._id || req.user.id);
-      const notification = await Notification.findOneAndUpdate(
-        { _id: notificationId, recipientId },
-        { read: true },
-        { new: true }
-      );
+    const { notificationId } = req.params;
+    const recipientId = new mongoose.Types.ObjectId(req.user._id || req.user.id);
+    const notification = await Notification.findOneAndUpdate(
+      { _id: notificationId, recipientId },
+      { read: true },
+      { new: true }
+    );
 
     if (!notification) {
       return res.status(404).json({ message: "Notification not found" });
     }
 
     res.status(200).json({ message: "Notification marked as read", notification });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to mark notification as read:", error);
-    res.status(500).json({ message: "Failed to mark notification as read", error });
+    res.status(500).json({ message: "Failed to mark notification as read", error: error.message });
   }
 };

@@ -359,6 +359,18 @@ const NGODashboard = () => {
     }
   };
 
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await markNotificationAsRead(notificationId);
+      // Refresh notifications after marking as read
+      await getNotifications();
+      toast.success("Notification marked as read");
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+      toast.error("Failed to mark notification as read");
+    }
+  };
+
   const VolunteerForm: React.FC<VolunteerFormProps> = ({ editingVolunteer, onSubmit, onClose }) => {
     const [formData, setFormData] = useState({
       name: "",
@@ -1064,12 +1076,15 @@ const NGODashboard = () => {
                             {new Date(notification.createdAt).toLocaleString()}
                           </p>
                         </div>
-                        {!notification.read && (
+                       {!notification.read && (
                           <button
-                            onClick={() => markNotificationAsRead(notification._id)}
-                            className="text-blue-600 hover:text-blue-800 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkAsRead(notification._id);
+                            }}
+                            className="ml-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
                           >
-                            Mark as read
+                            Mark as Read
                           </button>
                         )}
                       </div>
