@@ -140,7 +140,7 @@ const Header = () => {
               )}
             </div>
           </div>
-
+                {showWelcomePopup && <WelcomePopup onClose={() => setShowWelcomePopup(false)} />}
           {isMenuOpen && (
             <div className="md:hidden mt-4 pb-4 animate-fadeIn">
               <div className="flex flex-col space-y-4">
@@ -183,7 +183,7 @@ const Header = () => {
           )}
         </nav>
       </header>
-      {/* {showWelcomePopup && <WelcomePopup onClose={() => setShowWelcomePopup(false)} />} */}
+      
       
       {isHomePage && showWelcomePopup && (
         <div className="relative min-h-screen">
@@ -278,7 +278,7 @@ const Header = () => {
         </div>
       )}
 
-      {isHomePage && showWelcomePopup && <WelcomePopup onClose={() => setShowWelcomePopup(false)} />}
+      {/* {isHomePage && showWelcomePopup && <WelcomePopup onClose={() => setShowWelcomePopup(false)} />} */}
     </>
   );
 };

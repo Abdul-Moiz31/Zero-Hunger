@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { useNGOContext } from "@/contexts/ngoContext";
 import {
@@ -364,7 +365,7 @@ const NGODashboard = () => {
       await markNotificationAsRead(notificationId);
       // Refresh notifications after marking as read
       await getNotifications();
-      toast.success("Notification marked as read");
+      // toast.success("Notification marked as read");
     } catch (err) {
       console.error("Failed to mark notification as read:", err);
       toast.error("Failed to mark notification as read");
