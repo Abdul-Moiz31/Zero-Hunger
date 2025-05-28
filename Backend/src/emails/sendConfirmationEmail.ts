@@ -1,5 +1,5 @@
 import transporter from '../config/nodemailer';
-
+// import { UtensilsCrossed } from 'lucide-react';
 type EmailProps = {
   to: string;
   name: string;
@@ -30,7 +30,7 @@ export const sendConfirmationEmail = async ({ to, name, role }: EmailProps) => {
     html: `
       <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
         <div style="text-align: center;">
-          <img src="" alt="Zero Hunger Logo" width="120" style="margin-bottom: 20px;" />
+          <UtensilsCrossed className="w-8 h-8 text-green-600" />
         </div>
         <h2 style="color: #4CAF50;">Hello ${name},</h2>
         <p>Welcome to <strong>Zero Hunger</strong>! Your account has been successfully created as a <strong>${role}</strong>.</p>

@@ -7,7 +7,7 @@ import {
   Utensils,
   Search,
   Filter,
-  Trash2,
+Trash2,
   Eye,
   CheckCircle,
   XCircle,
@@ -75,7 +75,7 @@ const AdminDashboard = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedDonation, setSelectedDonation] = useState<FoodDonation | null>(null);
   const [selectedAction, setSelectedAction] = useState<"suspend" | "delete" | null>(null);
-  const [highlightRows, setHighlightRows] = useState<string[]>([]);
+  // const [highlightRows, setHighlightRows] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showUserDetails, setShowUserDetails] = useState<User | null>(null);
@@ -127,18 +127,19 @@ const AdminDashboard = () => {
   }, []);
 
   // Highlight new rows
-  useEffect(() => {
-    const newRowIds = [...new Set([...allusers.map((user: any) => user._id), ...foodDonations.map((d: any) => d._id)])];
-    setHighlightRows(newRowIds);
-    const timer = setTimeout(() => setHighlightRows([]), 2000);
-    return () => clearTimeout(timer);
-  }, [allusers.length, foodDonations.length]);
+  // useEffect(() => {
+  //   const newRowIds = [...new Set([...allusers.map((user: any) => user._id), ...foodDonations.map((d: any) => d._id)])];
+  //   setHighlightRows(newRowIds);
+  //   const timer = setTimeout(() => setHighlightRows([]), 2000);
+  //   return () => clearTimeout(timer);
+  // }, [allusers.length, foodDonations.length]);
 
   // Handle user actions
   const handleUserAction = (user: User, action: "suspend" | "delete") => {
     setSelectedUser(user);
     setSelectedAction(action);
     setShowConfirmDialog(true);
+   
   };
 
   // Handle donation deletion
@@ -146,6 +147,7 @@ const AdminDashboard = () => {
     setSelectedDonation(donation);
     setSelectedAction("delete");
     setShowConfirmDialog(true);
+    
   };
 
   // Confirm action
@@ -184,7 +186,6 @@ const AdminDashboard = () => {
 
   // Placeholder for saving settings
   const saveSettings = () => {
-    // TODO: Integrate with backend API when available
     toast.success("Settings saved successfully");
   };
 
@@ -330,10 +331,10 @@ const AdminDashboard = () => {
               <tbody>
                 {allusers.map((user: any) => (
                   <tr
-                    key={user._id}
-                    className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${
-                      highlightRows.includes(user._id) ? "highlight-row" : ""
-                    }`}
+                    // key={user._id}
+                    // className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${
+                    //   highlightRows.includes(user._id) ? "highlight-row" : ""
+                    // }`}
                   >
                     <td className="py-3 sm:py-4 px-4">
                       <div className="flex items-center space-x-3">
@@ -388,7 +389,9 @@ const AdminDashboard = () => {
                             totalContributions: 0,
                           }, "delete")}
                           className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-                          aria-label={`Delete user ${user.name}`}
+                          aria-label={`Delete user ${user.name}`
+                        }
+                        
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -455,10 +458,10 @@ const AdminDashboard = () => {
               <tbody>
                 {filteredUsers.map((user) => (
                   <tr
-                    key={user._id}
-                    className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${
-                      highlightRows.includes(user._id) ? "highlight-row" : ""
-                    }`}
+                    // key={user._id}
+                    // className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${
+                    //   highlightRows.includes(user._id) ? "highlight-row" : ""
+                    // }`}
                   >
                     <td className="py-3 sm:py-4 px-4">
                       <div className="flex items-center space-x-3">
@@ -562,10 +565,10 @@ const AdminDashboard = () => {
               <tbody>
                 {filteredDonations.map((donation: FoodDonation) => (
                   <tr
-                    key={donation._id}
-                    className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${
-                      highlightRows.includes(donation._id) ? "highlight-row" : ""
-                    }`}
+                    // key={donation._id}
+                    // className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${
+                    //   highlightRows.includes(donation._id) ? "highlight-row" : ""
+                    // }`}
                   >
                     <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{donation.donorName}</td>
                     <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{donation.ngoName}</td>
