@@ -87,8 +87,7 @@ export const claimFood = async (req: Request, res: Response) => {
     if (donor) {
       await Notification.create({
         recipientId: updatedFood.donorId,
-        message: `Your donation "${updatedFood.title}" has been claimed by NGO: "${organization_name};
-}".`,
+        message: `Your donation "${updatedFood.title}" has been claimed by NGO: "${userId.organization_name}"`,
         taskId: updatedFood._id,
         read: false,
       });
