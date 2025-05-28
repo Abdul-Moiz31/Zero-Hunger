@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, useState } from "react";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
+import {toast } from "react-toastify";
 
 // Define types for better type safety
 interface Stats {
@@ -109,6 +110,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   async function deleteUser(userId: string) {
     try {
       await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${userId}`);
+      toast.warning("Deleted successfully");
       await getDashboardStats(); // Refresh data
     } catch (error: any) {
       console.error("deleteUser error:", error.response?.data || error.message);
@@ -129,6 +131,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   async function deleteFoodDonation(donationId: string) {
     try {
       await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/food-donations/${donationId}`);
+      toast.warning("Deleted successfully");
       await getFoodDonations(); // Refresh data
     } catch (error: any) {
       console.error("deleteFoodDonation error:", error.response?.data || error.message);

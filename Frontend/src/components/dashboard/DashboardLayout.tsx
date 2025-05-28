@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -225,7 +226,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <div className="hidden sm:block">
                   <p className="font-semibold text-gray-800">{user?.name || 'User'}</p>
                   <p className="text-sm text-gray-500">
-                    {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || 'Guest'}
+                    {(user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest')}
                   </p>
                 </div>
               </div>

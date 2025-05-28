@@ -66,13 +66,13 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
     if (status === "in_progress" && previousStatus !== "in_progress") {
       await Notification.create({
         recipientId: ngoId,
-        message: `Task "${task.title}" is now in progress by ${req.user.name}.`,
+        message: `Task "${task.title}" is now in progress by an assigned volunteer.`,
         taskId,
       });
     } else if (status === "completed" && previousStatus !== "completed") {
       await Notification.create({
         recipientId: ngoId,
-        message: `Task "${task.title}" has been completed by  ${req.user.name}.`,
+        message: `Task "${task.title}" has been completed by by an assigned volunteer.`,
         taskId,
       });
       // if (status === "completed" ) {

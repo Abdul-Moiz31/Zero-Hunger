@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useCallback } from "react";
 import { useVolunteerContext } from "@/contexts/volunteerContext";
 import { Package2, Route, CheckCircle, Star, ChevronDown, X, Bell } from "lucide-react";
