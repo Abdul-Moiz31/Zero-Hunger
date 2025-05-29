@@ -9,7 +9,6 @@ import {
   Users, 
   Settings as SettingsIcon, 
   LogOut,
-  Bell,
   Search,
   ChevronDown,
   X
@@ -199,10 +198,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <div className="relative">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+                  
                 >
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  {/* <Bell className="w-5 h-5" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span> */}
                 </button>
 
                 {showNotifications && (

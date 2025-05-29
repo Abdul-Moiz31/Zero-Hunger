@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response  } from 'express';
 import Food from '../models/Food';
 
 export const addFood = async (req: any, res: Response) => {
@@ -25,7 +25,7 @@ export const getAvailableFoods = async (_req: Request, res: Response) => {
     res.status(500).json({ 
       success: false, 
       message: 'Failed to fetch available foods', 
-      error: error.message 
+      error: error instanceof Error ? error.message : String(error)
     });
   }
 };
