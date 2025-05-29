@@ -6,7 +6,7 @@ interface VolunteerEmailData {
   to: string;
   name: string;
   password: string;
-  organization_name: string;
+  organization_name?: string | undefined;
   registered_time: string;
 }
 
