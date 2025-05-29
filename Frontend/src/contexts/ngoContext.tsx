@@ -204,7 +204,7 @@ export function NGOProvider({ children }: { children: React.ReactNode }) {
   async function updateVolunteer(id: string, data: { name: string; email: string; contact_number: string }) {
     try {
       const token = localStorage.getItem("token");
-      console.log("Updating volunteer with ID:", id, "Data:", data);
+      // console.log("Updating volunteer with ID:", id, "Data:", data);
       const response = await axios.put(
         `${import.meta.env.VITE_API_BASE_URL}/ngo/volunteers/${id}`,
         data,

@@ -1,3 +1,4 @@
+import { IUser } from './../models/User';
 import { Request, Response } from "express";
 import User from "../models/User";
 import Food from "../models/Food";
@@ -105,7 +106,7 @@ export const claimFood = async (req: Request, res: Response) => {
     return res.status(500).json({ 
       success: false, 
       message: 'Server error while claiming food', 
-      error: error.message 
+      error: (error as Error).message,
     });
   }
 };
@@ -133,7 +134,7 @@ export const getClaimedFoods = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch claimed foods",
-      error: error.message,
+      error: (error as Error).message,
     });
   }
 };
@@ -157,7 +158,7 @@ export const deleteVolunteer = async (req: Request, res: Response) => {
       role: "volunteer",
       organization_name: ngo.organization_name,
     });
-    console.log("Volunteer found:", volunteer);
+    // console.log("Volunteer found:", volunteer);
     if (!volunteer) {
       return res.status(404).json({
         success: false,
@@ -166,7 +167,7 @@ export const deleteVolunteer = async (req: Request, res: Response) => {
     }
 
     await User.findByIdAndDelete(id);
-    console.log("Volunteer deleted successfully");
+    // console.log("Volunteer deleted successfully");
 
     res.status(200).json({
       success: true,
@@ -177,7 +178,7 @@ export const deleteVolunteer = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Failed to delete volunteer",
-      error: error.message,
+      error: (error as Error).message,
     });
   }
 };  
@@ -222,7 +223,7 @@ export const updateVolunteer = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Failed to update volunteer",
-      error: error.message,
+      error: (error as Error).message,
     });
   }
 };
@@ -281,9 +282,9 @@ export const addVolunteer = async (req: Request, res: Response) => {
     });
 
     // Return the saved volunteer (excluding password)
-    const volunteerResponse = volunteer.toObject();
-    delete volunteerResponse.password;
-    res.status(201).json(volunteerResponse);
+    
+     const volunteerResponse = await User.findById(volunteer._id).select('-password');
+res.status(201).json(volunteerResponse);  
   } catch (error) {
     console.error("Error adding volunteer:", error);
     res.status(500).json({
@@ -348,8 +349,8 @@ export const deleteClaimedFood = async (req: Request, res: Response) => {
 export const assignVolunteerToFood = async (req: Request, res: Response) => {
   try {
     const { volunteerId, foodId } = req.body;
-    const food = await Food.findById(foodId).populate("ngoId", "organization_name");
-    if (!food) {
+    const food = await Food.findById(foodId).populate("ngoId");
+    if (!food || !food.ngoId) {
       return res.status(404).json({ message: "Food item not found" });
     }
 
@@ -363,9 +364,10 @@ export const assignVolunteerToFood = async (req: Request, res: Response) => {
     await food.save();
 
     // Create a notification for the volunteer
+    const ngo = food.ngoId as IUser;
     await Notification.create({
       recipientId: volunteerId,
-      message: `A new task "${food.title}" has been assigned to you by ${food.ngoId.organization_name}.`,
+      message: `A new task "${food.title}" has been assigned to you by ${ngo.organization_name || 'an NGO'}`,
       taskId: foodId,
     });
 
