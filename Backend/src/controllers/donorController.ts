@@ -153,12 +153,19 @@ export const updateDonationStatus = async (
     }
 
     donation.status = status;
-    if (status === "assigned" && ngoId) {
-      donation.ngoId = new mongoose.Types.ObjectId(ngoId);
+    if (status === "assigned" && ngoId)  {
+      if (!mongoose.Types.ObjectId.isValid(ngoId)) {
+        return res.status(400).json({ message: "Invalid NGO ID" });
+      }
+      
       const ngo = await User.findById(ngoId);
+      if (!ngo || ngo.role !== "ngo") {
+        return res.status(404).json({ message: "NGO not found" });
+      }
+      donation.ngoId = new mongoose.Types.ObjectId(ngoId) as any ;
       await Notification.create({
         recipientId: donation.donorId,
-        message: `Your donation "${donation.title}" has been claimed by ${ngo ? ngo.name : "an NGO"}.`,
+        message: `Your donation "${donation.title}" has been claimed by ${ngo.organization_name || 'an NGO'}`,
         taskId: donation._id,
         read: false,
       });
@@ -168,7 +175,7 @@ export const updateDonationStatus = async (
       const volunteer = donation.volunteerId ? await User.findById(donation.volunteerId) : null;
       await Notification.create({
         recipientId: donation.donorId,
-        message: `Your donation "${donation.title}" has been completed by ${volunteer ? volunteer.name : "a volunteer"}.`,
+        message: `Your donation "${donation.title}" has been completed by ${volunteer?.name || "a volunteer"}.`,
         taskId: donation._id,
         read: false,
       });

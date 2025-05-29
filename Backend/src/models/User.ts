@@ -1,6 +1,26 @@
 import { Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
 
+
+// Define the User interface
+export interface IUser extends Document {
+  name: string;
+  email: string;
+  password: string;
+  role: "donor" | "ngo" | "volunteer" | "admin";
+  organization_name?: string;
+  contact_number?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
+  status: "Active" | "Inactive";
+  completedOrders: number;
+  joinedDate: Date;
+  isApproved: boolean;
+  ngoId?: Schema.Types.ObjectId;
+  rating: number;
+  comparePassword(candidatePassword: string): Promise<boolean>;
+}
+
 const userSchema = new Schema(
   {
     name: { type: String, required: true },
@@ -48,4 +68,6 @@ userSchema.methods.comparePassword = async function (
 // Index for reset token queries
 userSchema.index({ resetPasswordToken: 1, resetPasswordExpires: 1 });
 
-export default model("User", userSchema);
+export const User = model<IUser>("User", userSchema);
+export default User;
+
