@@ -3,6 +3,7 @@ import { forgotPassword, resetPassword , getOrgsNames , updateProfile  ,getOwnUs
 import { authMiddleware } from '../middlewares/authMiddleware';
 const router = express.Router();
 router.post('/register', register);
+// Login route blocks unapproved users
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);

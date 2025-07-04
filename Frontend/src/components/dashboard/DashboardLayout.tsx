@@ -27,6 +27,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [notifications] = useState([
     { id: 1, message: "New task available", time: "5 minutes ago" },
     { id: 2, message: "Task completed successfully", time: "1 hour ago" },
@@ -91,6 +92,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <button className='md:hidden p-2' onClick={() => setMobileSidebarOpen(false)} ><X className="w-6 h-6" /></button>
           </div>
           
+          {isMobileSidebarOpen && (
+            <div className="flex flex-col items-center py-4 border-b">
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-2">
+                <span className="text-2xl font-semibold text-green-600">{user?.name?.charAt(0) || 'U'}</span>
+              </div>
+              <span className="font-semibold text-gray-800">{user?.name || 'User'}</span>
+              <span className="text-sm text-gray-500">{user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest'}</span>
+            </div>
+          )}
+          
           <nav className="flex-1 p-4 space-y-2">
             <SidebarButton
               icon={LayoutDashboard}
@@ -140,22 +151,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               collapsed={isSidebarCollapsed}
             />
           </nav>
-
-           <div className="p-4 border-t">
-            <button 
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className={`w-full flex items-center space-x-2 px-4 py-2 rounded-lg text-red-600 transition-colors
-                ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-50'}`}
-            >
-              {isLoggingOut ? (
-                <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <LogOut className="w-5 h-5" />
-              )}
-              {!isSidebarCollapsed && <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>}
-            </button>
-          </div>
         </div>
       </div>
 
@@ -216,18 +211,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 )}
               </div>
 
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                <div className="w-8 sm:w-10 h-8 sm:h-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <span className="text-base sm:text-lg font-semibold text-green-600">
-                    {user?.name?.charAt(0) || 'U'}
-                  </span>
-                </div>
-                <div className="hidden sm:block">
-                  <p className="font-semibold text-gray-800">{user?.name || 'User'}</p>
-                  <p className="text-sm text-gray-500">
-                    {(user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest')}
-                  </p>
-                </div>
+              <div className="relative">
+                <button onClick={() => setShowProfileDropdown((v) => !v)} aria-label="Open profile menu" className="w-8 sm:w-10 h-8 sm:h-10 rounded-full bg-green-100 flex items-center justify-center focus:outline-none">
+                  <span className="text-base sm:text-lg font-semibold text-green-600">{user?.name?.charAt(0) || 'U'}</span>
+                </button>
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50 animate-fadeIn">
+                    <div className="px-4 py-2 border-b">
+                      <p className="font-semibold text-gray-800">{user?.name || 'User'}</p>
+                      <p className="text-sm text-gray-500">{user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest'}</p>
+                    </div>
+                    <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50">Logout</button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

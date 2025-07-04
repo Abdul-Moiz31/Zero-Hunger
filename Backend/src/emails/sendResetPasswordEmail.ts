@@ -1,26 +1,32 @@
 import transporter from '../config/nodemailer';
+import { createEmailTemplate, createPasswordResetContent, createPasswordResetConfirmationContent } from './emailTemplate';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 export const sendResetPasswordEmail = async (to: string, resetLink: string): Promise<void> => {
   try {
+    const content = createPasswordResetContent(resetLink);
+    
+    const emailData = createEmailTemplate({
+      subject: 'Reset Your Password',
+      title: 'Password Reset Request',
+      subtitle: 'We received a request to reset your password.',
+      headerIcon: '🔐',
+      content,
+      actionButton: {
+        text: 'Reset Password',
+        url: resetLink,
+        color: '#3b82f6'
+      },
+      footerText: 'If you did not request a password reset, please ignore this email.'
+    });
+      
     await transporter.sendMail({
       from: `"Zero Hunger Platform" <${process.env.EMAIL_USER}>`,
       to,
-      subject: 'Reset Your Password',
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px; max-width: 600px; margin: auto;">
-          <h2 style="color: #F44336;">Password Reset</h2>
-          <p>Click the button below to reset your password:</p>
-          <p>
-            <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; color: #fff; background-color: #2196F3; text-decoration: none; border-radius: 5px;">Reset Password</a>
-          </p>
-          <p><strong>Note:</strong> This link expires in 1 hour.</p>
-          <hr style="margin: 30px 0;" />
-          <p style="font-size: 12px; color: #777;">If you did not request a password reset, please ignore this email.</p>
-        </div>
-      `,
+      subject: emailData.subject,
+      html: emailData.html,
     });
   } catch (error) {
     console.error('Error sending reset password email:', error);
@@ -30,18 +36,22 @@ export const sendResetPasswordEmail = async (to: string, resetLink: string): Pro
 
 export const sendPasswordResetConfirmation = async (to: string): Promise<void> => {
   try {
+    const content = createPasswordResetConfirmationContent();
+    
+    const emailData = createEmailTemplate({
+      subject: 'Password Reset Successful',
+      title: 'Password Reset Successful',
+      subtitle: 'Your password has been successfully reset.',
+      headerIcon: '✅',
+      content,
+      footerText: 'If you did not perform this action, please contact our support team immediately.'
+    });
+
     await transporter.sendMail({
       from: `"Zero Hunger Platform" <${process.env.EMAIL_USER}>`,
       to,
-      subject: 'Password Reset Successful',
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px; max-width: 600px; margin: auto;">
-          <h2 style="color: #4CAF50;">Password Reset Successful</h2>
-          <p>Your password has been successfully reset.</p>
-          <p>If you did not perform this action, please contact our support team immediately.</p>
-          <p>Thank you,<br/>Zero Hunger Platform Team</p>
-        </div>
-      `,
+      subject: emailData.subject,
+      html: emailData.html,
     });
   } catch (error) {
     console.error('Error sending reset confirmation email:', error);

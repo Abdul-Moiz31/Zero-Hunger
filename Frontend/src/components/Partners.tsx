@@ -46,6 +46,7 @@ const Partners = () => {
                       src={partner.url}
                       alt={partner.name}
                       className="w-full h-40 object-cover rounded-lg mb-4"
+                      onError={e => { (e.currentTarget as HTMLImageElement).src = '/default-food-image.jpg'; }}
                     />
                     <h4 className="text-xl font-semibold text-center">{partner.name}</h4>
                   </div>
