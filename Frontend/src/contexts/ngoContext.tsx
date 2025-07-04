@@ -37,6 +37,7 @@ interface Food {
   status: string;
   acceptance_time: string;
   volunteerId?: string;
+  contact_number: string;
 }
 
 interface NGOContextType {

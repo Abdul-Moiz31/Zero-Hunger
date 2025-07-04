@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
+import axios from '../utils/axios';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -35,22 +36,33 @@ const Contact = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
-      }
-
+      // Debug: Log the API URL being used
+      console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL);
+      console.log('Full URL:', `${import.meta.env.VITE_API_BASE_URL}/contact`);
+      
+      const response = await axios.post('/contact', formData);
+      const data = response.data;
       setSuccess('Your message has been sent successfully!');
       setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (err: unknown) {
-      if (err instanceof Error) {
+      console.error('Contact form error:', err);
+      
+      if (axios.isAxiosError(err)) {
+        console.error('Axios error details:', {
+          status: err.response?.status,
+          statusText: err.response?.statusText,
+          data: err.response?.data,
+          message: err.message
+        });
+        
+        if (err.response?.status === 500) {
+          setError('Server error: Email service is not configured. Please contact the administrator.');
+        } else if (err.response?.data?.message) {
+          setError(err.response.data.message);
+        } else {
+          setError('Network error. Please check your connection and try again.');
+        }
+      } else if (err instanceof Error) {
         setError(err.message);
       } else {
         setError('An unknown error occurred.');
@@ -175,12 +187,12 @@ const Contact = () => {
               </div>
 
               {error && (
-                <div className="text-red-500 text-sm font-medium">
+                <div className="text-red-500 text-sm font-medium" role="alert">
                   {error}
                 </div>
               )}
               {success && (
-                <div className="text-green-500 text-sm font-medium">
+                <div className="text-green-500 text-sm font-medium" role="alert">
                   {success}
                 </div>
               )}

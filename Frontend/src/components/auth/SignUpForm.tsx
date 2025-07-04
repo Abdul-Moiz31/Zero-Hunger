@@ -37,6 +37,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess }) => {
     organization_name: '',
     contact_number: '',
   });
+  const [success, setSuccess] = useState<string>('');
 
   const validateEmail = (email: string): boolean => /^[\w.-]+@[\w.-]+\.[A-Za-z]{2,6}$/.test(email);
   const validatePassword = (password: string): boolean => password.length >= 6;
@@ -45,6 +46,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess }) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     const { name, email, password, role, organization_name, contact_number } = formData;
     if (!name || !email || !password || !role) {
@@ -74,33 +76,18 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
+      const data = await response.json();
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Sign-up failed');
+        throw new Error(data.message || 'Sign-up failed');
       }
-      await signIn(email, password);
-      const user: AuthUser = JSON.parse(localStorage.getItem('user') || '{}');
-      toast.success('Confirmation Email Sent! Redirecting...', {
-        position: 'top-right',
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        style: {
-            background: "#16a34a",
-            color: "#ffffff",
-            padding: "12px 24px",
-            borderRadius: "8px",
-            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-          },
-      });
-      setTimeout(() => {
-        onSuccess?.(user);
-      }, 2000);
+      setSuccess('Your request has been sent for approval. You will receive an email once approved.');
+      setError('');
+      setIsLoading(false);
+      return;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
+      setSuccess('');
       setIsLoading(false);
     }
   };
@@ -114,6 +101,9 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess }) => {
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm flex items-center">{error}</div>
+        )}
+        {success && (
+          <div className="p-3 bg-green-50 text-green-700 rounded-lg text-sm flex items-center">{success}</div>
         )}
 
         {/* Full Name */}

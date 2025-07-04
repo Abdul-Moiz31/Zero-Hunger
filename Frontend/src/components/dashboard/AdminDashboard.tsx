@@ -74,7 +74,7 @@ const AdminDashboard = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedDonation, setSelectedDonation] = useState<FoodDonation | null>(null);
-  const [selectedAction, setSelectedAction] = useState<"suspend" | "delete" | null>(null);
+  const [selectedAction, setSelectedAction] = useState<'suspend' | 'delete' | 'approve' | null>(null);
   // const [highlightRows, setHighlightRows] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -135,11 +135,10 @@ const AdminDashboard = () => {
   // }, [allusers.length, foodDonations.length]);
 
   // Handle user actions
-  const handleUserAction = (user: User, action: "suspend" | "delete") => {
+  const handleUserAction = (user: User, action: 'suspend' | 'delete' | 'approve') => {
     setSelectedUser(user);
     setSelectedAction(action);
     setShowConfirmDialog(true);
-   
   };
 
   // Handle donation deletion
@@ -152,19 +151,15 @@ const AdminDashboard = () => {
 
   // Confirm action
   const confirmAction = () => {
-    if (selectedAction === "delete" && selectedDonation) {
-      deleteFoodDonation(selectedDonation._id);
-    } else if (selectedUser && selectedAction) {
-      if (selectedAction === "suspend") {
-        const newStatus = selectedUser.status === "suspended" ? "active" : "suspended";
-        updateUserStatus({ userId: selectedUser._id, status: newStatus === "active" });
-      } else if (selectedAction === "delete") {
-        deleteUser(selectedUser._id);
-      }
+    if (selectedAction === 'delete' && selectedUser) {
+      deleteUser(selectedUser._id);
+    } else if (selectedAction === 'approve' && selectedUser) {
+      updateUserStatus({ userId: selectedUser._id, status: true });
+    } else if (selectedUser && selectedAction === 'suspend') {
+      // No longer used, but keep for type safety
     }
     setShowConfirmDialog(false);
     setSelectedUser(null);
-    setSelectedDonation(null);
     setSelectedAction(null);
   };
 
@@ -204,13 +199,8 @@ const AdminDashboard = () => {
           user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           user.email.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === "all" || user.status === statusFilter;
-        const matchesRole =
-          activeTab === "ngos"
-            ? user.role === "ngo"
-            : activeTab === "donors"
-            ? user.role === "donor"
-            : user.role === "volunteer";
-        return matchesSearch && matchesStatus && matchesRole;
+        // Only filter by role if you add role-based tabs in the future
+        return matchesSearch && matchesStatus;
       });
   }, [allusers, searchTerm, statusFilter, activeTab]);
 
@@ -223,7 +213,7 @@ const AdminDashboard = () => {
 
   // Components
   const ConfirmDialog = () => (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true">
       <div className="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full animate-scaleIn">
         <h3 className="text-lg sm:text-xl font-semibold mb-4">Confirm Action</h3>
         <p className="text-gray-600 mb-6 text-sm sm:text-base">
@@ -258,7 +248,7 @@ const AdminDashboard = () => {
   );
 
   const UserDetailsModal = ({ user }: { user: User }) => (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true">
       <div className="bg-white rounded-xl p-6 max-w-md w-full">
         <h3 className="text-xl font-semibold mb-4">{user.name}</h3>
         <p className="text-sm sm:text-base">Email: {user.email}</p>
@@ -317,90 +307,104 @@ const AdminDashboard = () => {
         <div className="p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-semibold mb-4">Recent Users</h2>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left border-b border-gray-100">
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Name</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Email</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Status</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Joined Date</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Type</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allusers.map((user: any) => (
-                  <tr
-                    // key={user._id}
-                    // className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${
-                    //   highlightRows.includes(user._id) ? "highlight-row" : ""
-                    // }`}
-                  >
-                    <td className="py-3 sm:py-4 px-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                          <span className="text-sm font-semibold text-blue-600">
-                            {user.name.charAt(0)}
-                          </span>
-                        </div>
-                        <span className="font-medium text-sm sm:text-base">{user.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{user.email}</td>
-                    <td className="py-3 sm:py-4 px-4">
-                      <select
-                        className={`px-2 py-1 rounded-full text-sm font-medium focus:outline-none transition-colors ease-in-out duration-300 ${
-                          user.isApproved
-                            ? "bg-green-100 text-green-700 hover:bg-green-200"
-                            : "bg-red-100 text-red-700 hover:bg-red-200"
-                        }`}
-                        value={user.isApproved ? "approved" : "not_approved"}
-                        onChange={(e) => handleStatusChange(user._id, e.target.value)}
-                      >
-                        <option value="approved">Approved</option>
-                        <option value="not_approved">Not Approved</option>
-                      </select>
-                    </td>
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">
-                      {memoizedFormatDate(user.createdAt)}
-                    </td>
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{user.role}</td>
-                    <td className="py-3 sm:py-4 px-4">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => setShowUserDetails({
-                            ...user,
-                            joinedDate: user.createdAt,
-                            status: user.isApproved ? "active" : "pending",
-                            lastActive: "N/A",
-                            totalContributions: 0,
-                          })}
-                          className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                          aria-label={`View details for ${user.name}`}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleUserAction({
-                            ...user,
-                            joinedDate: user.createdAt,
-                            status: user.isApproved ? "active" : "pending",
-                            lastActive: "N/A",
-                            totalContributions: 0,
-                          }, "delete")}
-                          className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-                          aria-label={`Delete user ${user.name}`
-                        }
-                        
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64"><div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin" aria-label="Loading" /></div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center h-64 text-red-600">
+                <span className="mb-4">{error}</span>
+                <button
+                  onClick={() => {
+                    setIsLoading(true);
+                    setError(null);
+                    Promise.all([getDashboardStats(), getFoodDonations()]).catch((err: any) => {
+                      setError(err.message || "Failed to load data. Please try again.");
+                      setIsLoading(false);
+                    });
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <table className="w-full" aria-label="User list">
+                <thead>
+                  <tr className="text-left border-b border-gray-100">
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Name</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Email</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Status</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Joined Date</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Type</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {allusers.map((user: any) => (
+                    <tr key={user._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                      <td className="py-3 sm:py-4 px-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-sm font-semibold text-blue-600">
+                              {user.name.charAt(0)}
+                            </span>
+                          </div>
+                          <span className="font-medium text-sm sm:text-base">{user.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{user.email}</td>
+                      <td className="py-3 sm:py-4 px-4">
+                        <select
+                          className={`px-2 py-1 rounded-full text-sm font-medium focus:outline-none transition-colors ease-in-out duration-300 ${
+                            user.isApproved
+                              ? "bg-green-100 text-green-700 hover:bg-green-200"
+                              : "bg-red-100 text-red-700 hover:bg-red-200"
+                          }`}
+                          value={user.isApproved ? "approved" : "not_approved"}
+                          onChange={(e) => handleStatusChange(user._id, e.target.value)}
+                        >
+                          <option value="approved">Approved</option>
+                          <option value="not_approved">Not Approved</option>
+                        </select>
+                      </td>
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">
+                        {memoizedFormatDate(user.createdAt)}
+                      </td>
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{user.role}</td>
+                      <td className="py-3 sm:py-4 px-4">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setShowUserDetails({
+                              ...user,
+                              joinedDate: user.createdAt,
+                              status: user.isApproved ? "active" : "pending",
+                              lastActive: "N/A",
+                              totalContributions: 0,
+                            })}
+                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                            aria-label={`View details for ${user.name}`}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleUserAction({
+                              ...user,
+                              joinedDate: user.createdAt,
+                              status: user.isApproved ? "active" : "pending",
+                              lastActive: "N/A",
+                              totalContributions: 0,
+                            }, "delete")}
+                            className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                            aria-label={`Delete user ${user.name}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
@@ -443,86 +447,102 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left border-b border-gray-100">
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Name</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Email</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Status</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Joined Date</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Last Active</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Contributions</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((user) => (
-                  <tr
-                    // key={user._id}
-                    // className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${
-                    //   highlightRows.includes(user._id) ? "highlight-row" : ""
-                    // }`}
-                  >
-                    <td className="py-3 sm:py-4 px-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                          <span className="text-sm font-semibold text-blue-600">
-                            {user.name.charAt(0)}
-                          </span>
-                        </div>
-                        <span className="font-medium text-sm sm:text-base">{user.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{user.email}</td>
-                    <td className="py-3 sm:py-4 px-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-sm font-medium ${
-                          user.status === "active"
-                            ? "bg-green-100 text-green-700"
-                            : user.status === "suspended"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : "N/A"}
-                      </span>
-                    </td>
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{memoizedFormatDate(user.joinedDate)}</td>
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{user.lastActive || "N/A"}</td>
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{user.totalContributions || 0}</td>
-                    <td className="py-3 sm:py-4 px-4">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => setShowUserDetails(user)}
-                          className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                          aria-label={`View details for ${user.name}`}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleUserAction(user, "suspend")}
-                          className="p-1.5 rounded-lg text-yellow-600 hover:bg-yellow-50 transition-colors"
-                          aria-label={user.status === "suspended" ? `Reactivate user ${user.name}` : `Suspend user ${user.name}`}
-                        >
-                          {user.status === "suspended" ? (
-                            <CheckCircle className="w-4 h-4" />
-                          ) : (
-                            <XCircle className="w-4 h-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleUserAction(user, "delete")}
-                          className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-                          aria-label={`Delete user ${user.name}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64"><div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin" aria-label="Loading" /></div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center h-64 text-red-600">
+                <span className="mb-4">{error}</span>
+                <button
+                  onClick={() => {
+                    setIsLoading(true);
+                    setError(null);
+                    Promise.all([getDashboardStats(), getFoodDonations()]).catch((err: any) => {
+                      setError(err.message || "Failed to load data. Please try again.");
+                      setIsLoading(false);
+                    });
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <table className="w-full" aria-label="User list">
+                <thead>
+                  <tr className="text-left border-b border-gray-100">
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Name</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Email</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Status</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Joined Date</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Last Active</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Contributions</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((user) => (
+                    <tr key={user._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                      <td className="py-3 sm:py-4 px-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-sm font-semibold text-blue-600">
+                              {user.name.charAt(0)}
+                            </span>
+                          </div>
+                          <span className="font-medium text-sm sm:text-base">{user.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{user.email}</td>
+                      <td className="py-3 sm:py-4 px-4">
+                        <span
+                          className={`px-2 py-1 rounded-full text-sm font-medium ${
+                            user.status === "active"
+                              ? "bg-green-100 text-green-700"
+                              : user.status === "suspended"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : "N/A"}
+                        </span>
+                      </td>
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{memoizedFormatDate(user.joinedDate)}</td>
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{user.lastActive || "N/A"}</td>
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{user.totalContributions || 0}</td>
+                      <td className="py-3 sm:py-4 px-4">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setShowUserDetails(user)}
+                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                            aria-label={`View details for ${user.name}`}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          {user.status !== 'active' && (
+                            <button
+                              onClick={() => handleUserAction(user, 'approve')}
+                              className="p-1.5 rounded-lg text-green-600 hover:bg-green-50 transition-colors"
+                              aria-label={`Approve user ${user.name}`}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                          )}
+                          {user.status !== 'active' && (
+                            <button
+                              onClick={() => handleUserAction(user, 'delete')}
+                              className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                              aria-label={`Delete user ${user.name}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
@@ -549,47 +569,63 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left border-b border-gray-100">
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Donor</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">NGO</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Volunteer</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Food Item</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Quantity</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Location</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Listed</th>
-                  <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDonations.map((donation: FoodDonation) => (
-                  <tr
-                    // key={donation._id}
-                    // className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${
-                    //   highlightRows.includes(donation._id) ? "highlight-row" : ""
-                    // }`}
-                  >
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{donation.donorName}</td>
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{donation.ngoName}</td>
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{donation.volunteerName}</td>
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{donation.title}</td>
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{`${donation.quantity} ${donation.unit}`}</td>
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{donation.pickup_location}</td>
-                    <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{memoizedFormatDate(donation.createdAt)}</td>
-                    <td className="py-3 sm:py-4 px-4">
-                      <button
-                        onClick={() => handleDonationDelete(donation)}
-                        className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-                        aria-label={`Delete donation ${donation.title}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64"><div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin" aria-label="Loading" /></div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center h-64 text-red-600">
+                <span className="mb-4">{error}</span>
+                <button
+                  onClick={() => {
+                    setIsLoading(true);
+                    setError(null);
+                    Promise.all([getDashboardStats(), getFoodDonations()]).catch((err: any) => {
+                      setError(err.message || "Failed to load data. Please try again.");
+                      setIsLoading(false);
+                    });
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <table className="w-full" aria-label="Donations list">
+                <thead>
+                  <tr className="text-left border-b border-gray-100">
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Donor</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">NGO</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Volunteer</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Food Item</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Quantity</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Location</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Listed</th>
+                    <th scope="col" className="pb-3 font-semibold text-gray-600 px-4 text-sm sm:text-base">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredDonations.map((donation: FoodDonation) => (
+                    <tr key={donation._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{donation.donorName}</td>
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{donation.ngoName}</td>
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{donation.volunteerName}</td>
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{donation.title}</td>
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{`${donation.quantity} ${donation.unit}`}</td>
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{donation.pickup_location}</td>
+                      <td className="py-3 sm:py-4 px-4 text-sm sm:text-base">{memoizedFormatDate(donation.createdAt)}</td>
+                      <td className="py-3 sm:py-4 px-4">
+                        <button
+                          onClick={() => handleDonationDelete(donation)}
+                          className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                          aria-label={`Delete donation ${donation.title}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
@@ -876,26 +912,6 @@ const AdminDashboard = () => {
       document.head.removeChild(styleSheet);
     };
   }, []);
-
-  // if (isLoading) return <div className="text-center p-6 text-gray-600">Loading...</div>;
-  // if (error) return (
-  //   <div className="text-center p-6 text-red-600">
-  //     {error}
-  //     <button
-  //       onClick={() => {
-  //         setIsLoading(true);
-  //         setError(null);
-  //         Promise.all([getDashboardStats(), getFoodDonations()]).catch((err: any) => {
-  //           setError(err.message || "Failed to load data. Please try again.");
-  //           setIsLoading(false);
-  //         });
-  //       }}
-  //       className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-  //     >
-  //       Retry
-  //     </button>
-  //   </div>
-  // );
 
   return (
     <div className="space-y-6 p-4 sm:p-6">

@@ -8,6 +8,7 @@ import { User } from '@/types/auth';
 const AuthPage: React.FC = () => {
   const [isSignIn, setIsSignIn] = useState<boolean>(true);
   const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
   const handleAuthSuccess = (userData: User) => {
     localStorage.setItem('user', JSON.stringify(userData));
@@ -72,7 +73,7 @@ const AuthPage: React.FC = () => {
 
           <div className="bg-white p-8 rounded-xl shadow-lg">
             {isSignIn ? (
-              <SignInForm onSuccess={handleAuthSuccess} />
+              <SignInForm onSuccess={handleAuthSuccess} onError={setError} />
             ) : (
               <SignUpForm onSuccess={handleAuthSuccess} />
             )}
@@ -86,6 +87,8 @@ const AuthPage: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {error && <div className="text-red-600 text-center mt-4">{error}</div>}
         </div>
       </div>
     </div>

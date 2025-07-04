@@ -95,10 +95,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function updateUserStatus(data: { userId: string; status: boolean }) {
+    if (!data.status) return; // Only allow approval
     try {
       await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/user-status/update`, {
         userId: data.userId,
-        status: data.status,
+        status: true,
       });
       await getDashboardStats(); // Refresh data
     } catch (error: any) {
