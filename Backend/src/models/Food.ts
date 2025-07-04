@@ -36,6 +36,7 @@ const foodSchema = new Schema({
   delivered_time: Date,
   pickup_location: String,
   temperature_requirements: String,
+  contact_number: String,
   dietary_info: String,
   createdAt: { type: Date, default: Date.now },
   img: String,

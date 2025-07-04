@@ -25,6 +25,7 @@ export interface Donation {
   pickup_window_end: string;
   status: "available" | "assigned" | "completed";
   temperature_requirements?: string;
+  contact_number: string;
   dietary_info?: string;
   img?: string;
   pickup_location?: string;

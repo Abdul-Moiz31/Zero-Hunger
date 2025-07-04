@@ -21,4 +21,5 @@ transporter.verify((error, success) => {
   else console.log('Nodemailer ready:', success);
 });
 
+// Used for sending approval emails to users when admin approves them
 export default transporter;

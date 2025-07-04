@@ -65,6 +65,7 @@ interface Food {
   dietary_info: string;
   img: string;
   status: "Pending" | "Completed" | "assigned";
+  contact_number: string;
   acceptance_time: string;
   donorId: { name: string; email: string };
   volunteerId?: { name: string; email: string; _id: string };
@@ -776,6 +777,10 @@ const NGODashboard = () => {
                   <div>
                     <span className="font-semibold">Accepted:</span>{" "}
                     {new Date(selectedFood.acceptance_time).toLocaleString()}
+                  </div>
+                   <div>
+                    <span className="font-semibold">Contact Number:</span>{" "}
+                    {selectedFood.contact_number || "N/A"}
                   </div>
                   <div>
                     <span className="font-semibold">Temperature:</span>{" "}

@@ -10,7 +10,7 @@ router.get('/dashboard-stats', authMiddleware(['admin']), getDashboardStats);
 // Route to get all food donations
 router.get('/food-donations', authMiddleware(['admin']), getFoodDonations);
 
-// Route to update the status of isApproved of a user
+// Route to approve a user (not toggle)
 router.put('/user-status/update', authMiddleware(['admin']), updateUserStatus);
 
 // Route to delete a user

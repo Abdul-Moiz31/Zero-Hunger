@@ -66,6 +66,7 @@ const About = () => {
                   src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1650&q=80"
                   alt="Community food distribution"
                   className="w-full h-full object-cover rounded-lg"
+                  onError={e => { (e.currentTarget as HTMLImageElement).src = '/default-food-image.jpg'; }}
                 />
               </div>
             </div>

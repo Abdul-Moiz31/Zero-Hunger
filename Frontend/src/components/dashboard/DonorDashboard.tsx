@@ -27,6 +27,7 @@ interface Donation {
   pickup_window_end: string;
   status: "available" | "assigned" | "completed";
   temperature_requirements?: string;
+  contact_number: string;
   dietary_info?: string;
   img?: string;
   pickup_location?: string;
@@ -57,6 +58,7 @@ interface FormData {
   pickup_window_start: string;
   pickup_window_end: string;
   temperature_requirements: string;
+  contact_number: string;
   dietary_info: string;
   pickup_location: string;
   img?: File | null;
@@ -84,7 +86,7 @@ const DonationForm = ({
     const pickupStart = new Date(formData.pickup_window_start);
     const pickupEnd = new Date(formData.pickup_window_end);
 
-    if (!formData.title.trim()) errors.title = "Title is required";
+    if (!formData.title.trim().length) errors.title = "Title is required";
     if (!formData.description.trim())
       errors.description = "Description is required";
     if (!formData.quantity || Number(formData.quantity) <= 0)
@@ -103,6 +105,10 @@ const DonationForm = ({
       errors.pickup_window_end = "Pickup end time must be after start time";
     if (!formData.pickup_location.trim())
       errors.pickup_location = "Pickup location is required";
+    if (!formData.contact_number.trim())
+      errors.contact_number = "Contact_number is required";
+    else if (!/^\+?\d{10,15}$/.test(formData.contact_number))
+  errors.contact_number = "Invalid contact number format";
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -374,6 +380,30 @@ const DonationForm = ({
                 </p>
               )}
             </div>
+            {/* Contact Number */}
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Contact Number
+              </label>
+              <input
+                type="text"
+                name="contact_number"
+                value={formData.contact_number}
+                onChange={handleFormChange}
+                className={`w-full p-2 border ${
+                  formErrors.contact_number
+                    ? "border-red-500"
+                    : "border-gray-300"
+                } rounded-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent`}
+                required
+                disabled={isSubmitting}
+              />
+              {formErrors.contact_number && (
+                <p className="text-red-500 text-xs mt-1">
+                  {formErrors.contact_number}
+                </p>
+              )}
+            </div>
 
             {/* File Upload */}
             <div className="sm:col-span-2">
@@ -445,6 +475,7 @@ const DonorDashboard = () => {
     pickup_window_start: "",
     pickup_window_end: "",
     temperature_requirements: "",
+    contact_number: "",
     dietary_info: "",
     pickup_location: "",
     img: null,
@@ -476,6 +507,7 @@ const DonorDashboard = () => {
         );
         submissionData.append("dietary_info", formData.dietary_info || "");
         submissionData.append("pickup_location", formData.pickup_location);
+        submissionData.append("contact_number", formData.contact_number);
         if (formData.img) {
           submissionData.append("img", formData.img);
         }
@@ -635,9 +667,12 @@ const DonorDashboard = () => {
                         timeZone: "Asia/Karachi",
                       })}
                     </span>
+                    
                   </div>
+                  
                 </div>
               </div>
+             
               <span
                 className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap ${
                   donation.status === "available"
@@ -735,6 +770,9 @@ const DonorDashboard = () => {
                   Pickup Location
                 </th>
                 <th scope="col" className="p-3 sm:p-4 text-left">
+                  Contact Number
+                </th>
+                <th scope="col" className="p-3 sm:p-4 text-left">
                   Status
                 </th>
                 <th scope="col" className="p-3 sm:p-4 text-left">
@@ -770,6 +808,9 @@ const DonorDashboard = () => {
                   </td>
                   <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
                     {donation.pickup_location}
+                  </td>
+                  <td className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base">
+                    {donation.contact_number}
                   </td>
                   <td className="px-3 sm:px-4 py-2 sm:py-3">
                     <select

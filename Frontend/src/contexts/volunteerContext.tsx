@@ -19,6 +19,7 @@ interface Task {
   pickup_window_start: string;
   pickup_window_end: string;
   ngoId: { organization_name: string };
+  contact_number: number,
   donorId: { name: string; email: string };
   feedback?: { rating: number; feedback: string };
 }

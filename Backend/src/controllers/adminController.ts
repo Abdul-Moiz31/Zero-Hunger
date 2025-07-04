@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import User from "../models/User";
 import Food from "../models/Food";
+import transporter from '../config/nodemailer';
+import { sendApprovalEmail } from '../emails/sendApprovalEmail';
 
 // Define types for clarity
 interface UserDocument {
@@ -42,22 +44,32 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 export const updateUserStatus = async (req: Request, res: Response) => {
   try {
     const { userId, status } = req.body;
-
     if (!userId) {
       return res.status(400).json({ message: "User ID is required" });
     }
-
     if (status === undefined) {
       return res.status(400).json({ message: "Status is required" });
     }
-
     const userExist = await User.findById(userId);
     if (!userExist) {
       return res.status(404).json({ message: "User does not exist" });
     }
-
+    if (userExist.isApproved && status) {
+      return res.status(400).json({ message: "User is already approved" });
+    }
+    if (userExist.isApproved && !status) {
+      return res.status(400).json({ message: "Cannot unapprove an already approved user" });
+    }
     await User.findByIdAndUpdate(userId, { isApproved: status });
-    res.status(200).json({ message: "Status updated successfully" });
+    // Send approval email if status is true
+    if (status && !userExist.isApproved) {
+      await sendApprovalEmail({
+        to: userExist.email,
+        name: userExist.name,
+        role: userExist.role
+      });
+    }
+    res.status(200).json({ message: status ? "User approved successfully" : "Status updated successfully" });
   } catch (error: any) {
     console.error("updateUserStatus error:", error.message);
     res.status(500).json({ message: "Server error while updating user status", error: error.message });

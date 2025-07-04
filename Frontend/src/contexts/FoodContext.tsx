@@ -32,6 +32,7 @@ export interface FoodListing {
   ngoId?: string | NGO;
   acceptance_time?: Date | string;
   volunteerId?: string | Volunteer;
+  contact_number:string,
   delivered_time?: Date | string;
   temperature_requirements?: string;
   dietary_info?: string;

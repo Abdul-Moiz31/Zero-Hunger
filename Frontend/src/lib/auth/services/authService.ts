@@ -47,6 +47,9 @@ class AuthService {
 
     if (!response.ok) {
       const error = await response.json();
+      if (response.status === 403 && error.message?.includes('pending admin approval')) {
+        throw new Error('Your account is pending admin approval. Please wait for approval.');
+      }
       throw new Error(error.message || 'Login failed');
     }
 
