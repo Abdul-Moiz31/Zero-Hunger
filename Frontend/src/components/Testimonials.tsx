@@ -3,7 +3,7 @@ import { Quote } from 'lucide-react';
 
 const TestimonialCard = ({ quote, author, role }: { quote: string, author: string, role: string }) => (
   <div className="bg-white p-8 rounded-lg shadow-lg">
-    <Quote className="w-8 h-8 text-green-600 mb-4" />
+    <Quote className="w-8 h-8 text-green-600 mb-4" aria-hidden="true" />
     <p className="text-gray-600 mb-6">{quote}</p>
     <div>
       <p className="font-semibold text-gray-800">{author}</p>

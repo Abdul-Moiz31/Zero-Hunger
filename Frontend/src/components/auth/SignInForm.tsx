@@ -40,6 +40,18 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    // if(!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)){
+    //   setError('Please enter a valid email address');
+    //   setIsLoading(false);
+    //   return;
+    // }
+    // if(formData.password.length < 6){
+    //   setError('Password must be at least 6 characters long');
+    //   setIsLoading(false);
+    //   return;
+    // }
+
+    // 
     try {
       const response = await signIn(formData.email.trim(), formData.password.trim());
 

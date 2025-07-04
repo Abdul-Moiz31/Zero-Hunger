@@ -15,6 +15,7 @@ interface CreateDonationBody {
   pickup_window_start: string;
   pickup_window_end: string;
   temperature_requirements?: string;
+  contact_number: string;
   dietary_info?: string;
   pickup_location?: string;
 }
@@ -36,6 +37,7 @@ export const createDonation = async (req: Request<{}, {}, CreateDonationBody>, r
       pickup_window_start,
       pickup_window_end,
       temperature_requirements,
+      contact_number,
       dietary_info,
       pickup_location,
     } = req.body;
@@ -57,6 +59,7 @@ export const createDonation = async (req: Request<{}, {}, CreateDonationBody>, r
       pickup_window_start,
       pickup_window_end,
       temperature_requirements,
+      contact_number,
       dietary_info,
       img: url,
       status: "available",

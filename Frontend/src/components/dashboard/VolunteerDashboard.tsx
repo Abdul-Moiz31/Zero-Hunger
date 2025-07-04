@@ -15,6 +15,7 @@ interface Task {
   pickup_window_start: string;
   pickup_window_end: string;
   ngoId: { organization_name: string };
+  contact_number: number,
   donorId: { name: string; email: string };
   feedback?: { rating: number; feedback: string };
 }
@@ -221,6 +222,7 @@ const VolunteerDashboard = () => {
                 <th>From</th>
                 <th>To</th>
                 <th>Time</th>
+                <th> Phone Number</th>
                 <th>Status</th>
                 <th>Action</th>
               </tr>
@@ -243,6 +245,7 @@ const VolunteerDashboard = () => {
                         minute: "2-digit",
                       })}
                     </td>
+                    <td>{task.contact_number || "N/A"}</td>
                     <td>
                       <Badge status={task.status} />
                     </td>
