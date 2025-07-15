@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db';
+// import { createServer } from '@vercel/node';
 
 import authRoutes from './routes/authRoutes';
 import contactRoutes from './routes/contactRoutes';
@@ -34,7 +35,7 @@ app.use(express.urlencoded({ extended: true })); // for parsing application/x-ww
 
 app.use(cookieParser());
 app.get('/', (_req, res) => {
-  res.send('Hello World');
+  return res.status(200).json({ message: 'Hello World' });
 });
 app.use('/api/auth', authRoutes);
 app.use('/api/contact', contactRoutes);

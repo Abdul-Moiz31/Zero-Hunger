@@ -26,7 +26,6 @@ dist-ssr
 
 # Node.js
 node_modules/
-.env
 dist/
 coverage/
 .nyc_output/
@@ -58,3 +57,4 @@ Backend/.env
 .env.*.local
 *.swp
 
+config.bat
