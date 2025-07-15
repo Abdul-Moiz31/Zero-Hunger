@@ -185,7 +185,7 @@ export const updateDonationStatus = async (
       if (!ngo || ngo.role !== 'ngo') {
         return res.status(404).json({ message: 'NGO not found' });
       }
-      donation.ngoId = ngo._id;
+      donation.ngoId = ngo._id as any;
       await Notification.create({
         recipientId: donation.donorId,
         message: `Your donation "${donation.title}" has been claimed by ${ngo.organization_name || 'an NGO'}`,
