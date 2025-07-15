@@ -33,6 +33,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
 app.use(cookieParser());
+app.get('/', (_req, res) => {
+  res.send('Hello World');
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/admin', adminRoutes);
