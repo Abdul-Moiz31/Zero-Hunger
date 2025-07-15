@@ -1,12 +1,12 @@
-import { Schema, model } from "mongoose";
-import { IUser } from './User';
+import { Schema, model } from 'mongoose';
+// import { IUser } from './User';
 
 export interface IFood extends Document {
   title: string;
   description?: string; // Optional description of the food item
-  donorId: Schema.Types.ObjectId | IUser; // Populated donor
-  ngoId?: Schema.Types.ObjectId | IUser; // Populated NGO (optional)
-  volunteerId?: Schema.Types.ObjectId | IUser; // Populated volunteer (optional)
+  donorId: Schema.Types.ObjectId;
+  ngoId?: Schema.Types.ObjectId;
+  volunteerId?: Schema.Types.ObjectId;
   status: 'available' | 'in_progress' | 'assigned' | 'completed';
   acceptance_time?: Date; // When the food was claimed
   createdAt: Date; // Timestamp for creation
@@ -17,7 +17,7 @@ export interface IFood extends Document {
 }
 
 const foodSchema = new Schema({
-  donorId: { type: Schema.Types.ObjectId, ref: "User" },
+  donorId: { type: Schema.Types.ObjectId, ref: 'User' },
   title: String,
   description: String,
   quantity: Number,
@@ -27,12 +27,12 @@ const foodSchema = new Schema({
   pickup_window_end: String,
   status: {
     type: String,
-    enum: ["available", "in_progress", "assigned", "completed"],
-    default: "available",
+    enum: ['available', 'in_progress', 'assigned', 'completed'],
+    default: 'available',
   },
-  ngoId: { type: Schema.Types.ObjectId, ref: "User" },
+  ngoId: { type: Schema.Types.ObjectId, ref: 'User' },
   acceptance_time: Date,
-  volunteerId: { type: Schema.Types.ObjectId, ref: "User" },
+  volunteerId: { type: Schema.Types.ObjectId, ref: 'User' },
   delivered_time: Date,
   pickup_location: String,
   temperature_requirements: String,

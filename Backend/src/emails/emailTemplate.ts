@@ -100,7 +100,7 @@ export const createContactFormContent = (name: string, email: string, subject: s
 `;
 
 // Helper function to create password reset content
-export const createPasswordResetContent = (resetLink: string) => `
+export const createPasswordResetContent = () => `
   <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 25px 0;">
     <h4 style="color: #92400e; margin: 0 0 10px; font-size: 16px; font-weight: 600;">🔐 Password Reset Request</h4>
     <p style="color: #92400e; margin: 0; font-size: 14px; line-height: 1.5;">

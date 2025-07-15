@@ -1,6 +1,5 @@
 import transporter from '../config/nodemailer';
 import { createEmailTemplate, createVolunteerConfirmationContent } from './emailTemplate';
-import dotenv from 'dotenv';
 import { format } from 'date-fns';
 
 interface VolunteerEmailData {

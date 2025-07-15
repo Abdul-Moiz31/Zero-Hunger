@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config(); 
 
 if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-  throw new Error("EMAIL_USER and EMAIL_PASS must be defined in .env");
+  throw new Error('EMAIL_USER and EMAIL_PASS must be defined in .env');
 }
 
 const transporter = nodemailer.createTransport({
