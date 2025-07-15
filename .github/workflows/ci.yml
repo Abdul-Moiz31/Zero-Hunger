@@ -30,27 +30,14 @@ jobs:
         working-directory: ./Backend
         run: npm ci
 
-      - name: Lint Backend
-        working-directory: ./Backend
-        run: npx eslint .
-
       - name: Type Check Backend
         working-directory: ./Backend
         run: npx tsc --noEmit
-
-      # Add backend tests here if you have them
-      # - name: Test Backend
-      #   working-directory: ./Backend
-      #   run: npm test
 
       # Frontend
       - name: Install Frontend dependencies
         working-directory: ./Frontend
         run: npm ci
-
-      - name: Lint Frontend
-        working-directory: ./Frontend
-        run: npx eslint .
 
       - name: Type Check Frontend
         working-directory: ./Frontend

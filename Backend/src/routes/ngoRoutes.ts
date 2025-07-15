@@ -6,35 +6,41 @@ import Notification from '../models/Notification';
 const router = Router();
 
 router.get('/volunteers', authMiddleware(['ngo']), getMyVolunteers);
-router.post("/claim/food", authMiddleware(['ngo']), claimFood);
-router.get("/claimed/foods", authMiddleware(['ngo']), getClaimedFoods);
-router.get("/stats", authMiddleware(['ngo']), getNgoStats);
+router.post('/claim/food', authMiddleware(['ngo']), claimFood);
+router.get('/claimed/foods', authMiddleware(['ngo']), getClaimedFoods);
+router.get('/stats', authMiddleware(['ngo']), getNgoStats);
 router.post('/assign-volunteer', authMiddleware(['ngo']), assignVolunteerToFood);
 router.delete('/volunteers/:id', authMiddleware(['ngo']), deleteVolunteer);
 router.put('/volunteers/:id', authMiddleware(['ngo']), updateVolunteer);
 router.post('/volunteers', authMiddleware(['ngo']), addVolunteer);
-router.patch("/food/:id/status", authMiddleware(["ngo"]), updateFoodStatus);
-router.delete("/claimed-food/:id", authMiddleware(["ngo"]), deleteClaimedFood);
+router.patch('/food/:id/status', authMiddleware(['ngo']), updateFoodStatus);
+router.delete('/claimed-food/:id', authMiddleware(['ngo']), deleteClaimedFood);
 router.get('/notifications', authMiddleware(['ngo']), async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const notifications = await Notification.find({ recipientId: req.user.id }).sort({ createdAt: -1 });
     
     res.status(200).json(notifications);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch notifications", error });
+    res.status(500).json({ message: 'Failed to fetch notifications', error });
   }
 });
 router.patch('/notifications/:notificationId/read', authMiddleware(['ngo']), async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const notification = await Notification.findOneAndUpdate(
       { _id: req.params.notificationId, recipientId: req.user.id },
       { read: true },
       { new: true }
     );
-    if (!notification) return res.status(404).json({ message: "Notification not found" });
-    res.status(200).json({ message: "Notification marked as read", notification });
+    if (!notification) return res.status(404).json({ message: 'Notification not found' });
+    res.status(200).json({ message: 'Notification marked as read', notification });
   } catch (error) {
-    res.status(500).json({ message: "Failed to mark notification as read", error });
+    res.status(500).json({ message: 'Failed to mark notification as read', error });
   }
 });
 

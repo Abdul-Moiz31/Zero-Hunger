@@ -11,7 +11,7 @@ export const sendNotification = async (req: Request, res: Response) => {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Notification from Zero Hunger",
+      subject: 'Notification from Zero Hunger',
       text: message
     });
   }
@@ -19,7 +19,10 @@ export const sendNotification = async (req: Request, res: Response) => {
   res.status(201).json(note);
 };
 
-export const getNotifications = async (req: any, res: Response) => {
+export const getNotifications = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'User not authenticated' });
+  }
   const notes = await Notification.find({ receiver_id: req.user.id });
   res.json(notes);
 };

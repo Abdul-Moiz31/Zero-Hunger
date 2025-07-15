@@ -11,5 +11,5 @@ router.get('/org-names', getOrgsNames);
 router.put('/update-profile', authMiddleware(), updateProfile);
 
 // me route
-router.get('/me',authMiddleware(),getOwnUser)
+router.get('/me',authMiddleware(),getOwnUser);
 export default router;
