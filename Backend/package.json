@@ -5,7 +5,9 @@
   "scripts": {
     "start": "node dist/server.js",
     "build": "tsc",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts"
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts ",
+    "lint": "eslint . --ext .ts,.js,.jsx,.tsx",
+    "lint:fix": "eslint . --ext .ts,.js,.jsx,.tsx --fix"
   },
   "outputdir": "dist",
   "dependencies": {
@@ -33,7 +35,11 @@
     "@types/multer": "^1.4.12",
     "@types/node": "^22.14.1",
     "@types/nodemailer": "^6.4.17",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
+    "eslint": "^9.31.0",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.37.0"
   }
 }

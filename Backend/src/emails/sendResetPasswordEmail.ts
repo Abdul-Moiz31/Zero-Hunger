@@ -6,7 +6,7 @@ dotenv.config();
 
 export const sendResetPasswordEmail = async (to: string, resetLink: string): Promise<void> => {
   try {
-    const content = createPasswordResetContent(resetLink);
+    const content = createPasswordResetContent();
     
     const emailData = createEmailTemplate({
       subject: 'Reset Your Password',
