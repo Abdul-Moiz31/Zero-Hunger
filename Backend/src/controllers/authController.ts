@@ -1,10 +1,9 @@
-import { Request, Response } from "express";
-import  { User } from "../models/User";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { sendConfirmationEmail } from "../emails/sendConfirmationEmail";
-import { sendResetPasswordEmail, sendPasswordResetConfirmation } from "../emails/sendResetPasswordEmail";
-import crypto from "crypto";
+import { Request, Response } from 'express';
+import  { User } from '../models/User';
+import jwt from 'jsonwebtoken';
+import { sendConfirmationEmail } from '../emails/sendConfirmationEmail';
+import { sendResetPasswordEmail, sendPasswordResetConfirmation } from '../emails/sendResetPasswordEmail';
+import crypto from 'crypto';
 
 export const register = async (req: Request, res: Response) => {
   const {
@@ -29,7 +28,7 @@ export const register = async (req: Request, res: Response) => {
     }
 
     // Base user payload
-    const userPayload: any = {
+    const userPayload: Record<string, unknown> = {
       name,
       email,
       password, // Password will be hashed by pre-save hook
@@ -38,7 +37,7 @@ export const register = async (req: Request, res: Response) => {
       contact_number,
     };
 
-    if (role === "volunteer") {
+    if (role === 'volunteer') {
       userPayload.ngoId = ngoId;
       userPayload.isApproved = false;
     }
@@ -47,12 +46,14 @@ export const register = async (req: Request, res: Response) => {
 
     await sendConfirmationEmail({ to: email, name, role });
 
-    res.status(201).json({ message: "User registered successfully" });
-  } catch (error) {
-    console.error("Registration error:", error);
-    res
-      .status(500)
-      .json({ message: "Something went wrong during registration" });
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Registration error:', error);
+      res
+        .status(500)
+        .json({ message: 'Something went wrong during registration' });
+    }
   }
 };
 
@@ -61,11 +62,11 @@ export const login = async (req: Request, res: Response) => {
 
   try {
 const user = await User.findOne({ email });
-if (!user) return res.status(404).json({ message: "User not found" });
+if (!user) return res.status(404).json({ message: 'User not found' });
 
 const isMatch = await user.comparePassword(password);
 if (!isMatch)
-  return res.status(401).json({ message: "Invalid credentials" });
+  return res.status(401).json({ message: 'Invalid credentials' });
 
 if (!user.isApproved) {
   return res.status(403).json({ message: 'Your account is pending admin approval.' });
@@ -74,20 +75,22 @@ if (!user.isApproved) {
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET!,
-      { expiresIn: "7d" }
+      { expiresIn: '7d' }
     );
     // Set the token in a secure, httpOnly cookie
-    res.cookie("token", token, {
+    res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Use HTTPS in prod
-      sameSite: "none", // Crucial for localhost cross-origin cookies
+      sameSite: 'none', // Crucial for localhost cross-origin cookies
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     res.status(200).json({ token, user });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Something went wrong during login" });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Login error:', error);
+      res.status(500).json({ message: 'Something went wrong during login' });
+    }
   }
 };
 
@@ -96,10 +99,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const user = await User.findOne({ email });
     if (!user)
-      return res.status(404).json({ message: "No user with that email" });
+      return res.status(404).json({ message: 'No user with that email' });
 
     // Generate and hash reset token
-    const token = crypto.randomBytes(32).toString("hex");
+    const token = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const expiry = Date.now() + 3600000; // 1 hour
 
@@ -110,10 +113,12 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const link = `${process.env.FRONTEND_URL}/reset-password/${token}`;
     await sendResetPasswordEmail(email, link);
 
-    res.json({ message: "Password reset link sent to your email" });
-  } catch (err) {
-    console.error('Forgot password error:', err);
-    res.status(500).json({ message: "Something went wrong" });
+    res.json({ message: 'Password reset link sent to your email' });
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('Forgot password error:', err);
+      res.status(500).json({ message: 'Something went wrong' });
+    }
   }
 };
 
@@ -131,7 +136,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     });
 
     if (!user)
-      return res.status(400).json({ message: "Invalid or expired token" });
+      return res.status(400).json({ message: 'Invalid or expired token' });
 
     user.password = password; // Will be hashed by pre-save hook
     user.resetPasswordToken = undefined;
@@ -140,42 +145,55 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     await sendPasswordResetConfirmation(user.email);
 
-    res.json({ message: "Password has been reset successfully" });
-  } catch (err) {
-    console.error('Reset password error:', err);
-    res.status(500).json({ message: "Something went wrong" });
+    res.json({ message: 'Password has been reset successfully' });
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error('Reset password error:', err);
+      res.status(500).json({ message: 'Something went wrong' });
+    }
   }
 };
 
 export const getOwnUser = async (req: Request, res: Response) => {
   try {
     console.log('getOwnUser - req.user:', req.user);
-    if (!req.user || !req.user.id) {
+    if (!req.user) {
       return res.status(401).json({ message: 'User not authenticated' });
     }
-    const user = await User.findById(req.user.id).select("-password");
+    if (!req.user.id) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    const user = await User.findById(req.user.id).select('-password');
     if (!user) {
       console.log('User not found in database for ID:', req.user.id);
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: 'User not found' });
     }
 
     res.status(200).json({ user });
-  } catch (error) {
-    console.error("Error fetching user:", error);
-    res.status(500).json({ message: "Something went wrong" });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error fetching user:', error);
+      res.status(500).json({ message: 'Something went wrong' });
+    }
   }
 };
 
 export const getOrgsNames=async(req: Request,res : Response)=>{
 
-  const orgs=await User.find({role:"ngo"}).select("organization_name");
+  const orgs=await User.find({role:'ngo'}).select('organization_name');
 
-  res.json(orgs)
-}
+  res.json(orgs);
+};
 export const updateProfile = async (req: Request, res: Response) => {
   // console.log('Received update profile request:', req.body, 'User:', req.user);
   try {
     const { name, organization_name, contact_number } = req.body;
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    if (!req.user.id) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const user = await User.findById(req.user.id); // Changed from req.user._id to req.user.id to match token payload
 
     if (!user) {
@@ -202,8 +220,10 @@ export const updateProfile = async (req: Request, res: Response) => {
         contact_number: user.contact_number,
       },
     });
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    res.status(500).json({ message: 'Something went wrong during profile update' });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error updating profile:', error);
+      res.status(500).json({ message: 'Something went wrong during profile update' });
+    }
   }
 };

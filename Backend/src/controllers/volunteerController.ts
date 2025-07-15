@@ -1,15 +1,19 @@
-import { Request, Response } from "express";
-import Food from "../models/Food";
-import User from "../models/User";
-import Notification from "../models/Notification";
+import { Request, Response } from 'express';
+import Food from '../models/Food';
+import User from '../models/User';
+import Notification from '../models/Notification';
+import mongoose from 'mongoose';
 
 export const getVolunteerStats = async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const volunteerId = req.user.id;
 
-    const available_Task = await Food.countDocuments({ status: "available" });
-    const in_progress_task = await Food.countDocuments({ volunteerId, status: "in_progress" });
-    const completed_task = await Food.countDocuments({ volunteerId, status: "completed" });
+    const available_Task = await Food.countDocuments({ status: 'available' });
+    const in_progress_task = await Food.countDocuments({ volunteerId, status: 'in_progress' });
+    const completed_task = await Food.countDocuments({ volunteerId, status: 'completed' });
 
     res.status(200).json({
       available_Task,
@@ -17,43 +21,49 @@ export const getVolunteerStats = async (req: Request, res: Response) => {
       Completed_task: completed_task,
     });
   } catch (error) {
-    console.error("Error fetching volunteer stats:", error);
-    res.status(500).json({ message: "Failed to fetch volunteer stats", error });
+    console.error('Error fetching volunteer stats:', error);
+    res.status(500).json({ message: 'Failed to fetch volunteer stats', error });
   }
 };
 
 export const getVolunteerTasks = async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const volunteerId = req.user.id;
     const tasks = await Food.find({ volunteerId })
-      .populate("ngoId", "organization_name") 
-      .populate("donorId", "name email");
+      .populate('ngoId', 'organization_name') 
+      .populate('donorId', 'name email');
     res.status(200).json(tasks);
-  } catch (error: any) {
-    console.error("Error fetching volunteer tasks:", error);
-    res.status(500).json({ message: "Failed to fetch tasks", error });
+  } catch (error: unknown) {
+    console.error('Error fetching volunteer tasks:', error);
+    res.status(500).json({ message: 'Failed to fetch tasks', error });
   }
 };
 
 export const updateTaskStatus = async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const { taskId } = req.params;
     const { status } = req.body;
     const volunteerId = req.user.id;
     // console.log("Updating task status:", { taskId, status, volunteerId });
 
-    const validStatuses = ["available", "in_progress", "assigned", "completed"];
+    const validStatuses = ['available', 'in_progress', 'assigned', 'completed'];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: "Invalid status" });
+      return res.status(400).json({ message: 'Invalid status' });
     }
 
     const task = await Food.findById(taskId);
     if (!task) {
-      return res.status(404).json({ message: "Task not found" });
+      return res.status(404).json({ message: 'Task not found' });
     }
 
     if (task.volunteerId?.toString() !== volunteerId) {
-      return res.status(403).json({ message: "Not authorized to update this task" });
+      return res.status(403).json({ message: 'Not authorized to update this task' });
     }
 
     const previousStatus = task.status;
@@ -63,13 +73,13 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
     // Create notification for NGO based on status change
     const ngoId = task.ngoId;
     // const donorId = task.ngoId;
-    if (status === "in_progress" && previousStatus !== "in_progress") {
+    if (status === 'in_progress' && previousStatus !== 'in_progress') {
       await Notification.create({
         recipientId: ngoId,
         message: `Task "${task.title}" is now in progress by an assigned volunteer.`,
         taskId,
       });
-    } else if (status === "completed" && previousStatus !== "completed") {
+    } else if (status === 'completed' && previousStatus !== 'completed') {
       await Notification.create({
         recipientId: ngoId,
         message: `Task "${task.title}" has been completed by by an assigned volunteer.`,
@@ -95,12 +105,14 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       }
     }
 
-    res.status(200).json({ message: "Task status updated", task });
-  } catch (error: any) {
-    console.error("Error updating task status:", error);
-    if (error.name === "ValidationError") {
-      return res.status(400).json({ message: "Validation failed", errors: error.errors });
+    res.status(200).json({ message: 'Task status updated', task });
+  } catch (error: unknown) {
+    console.error('Error updating task status:', error);
+    if (error instanceof mongoose.Error.ValidationError) {
+      return res.status(400).json({ message: 'Validation failed', errors: error.errors });
+    } else {
+      return res.status(400).json({ message: 'Validation failed', errors: 'Unknown error' });
     }
-    res.status(500).json({ message: "Failed to update task status", error });
+    res.status(500).json({ message: 'Failed to update task status', error });
   }
 };

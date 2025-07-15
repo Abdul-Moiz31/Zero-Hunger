@@ -1,6 +1,6 @@
-import { Router, Request, Response } from "express";
-import { deleteUser, getDashboardStats, updateUserStatus, getFoodDonations, deleteFoodDonation } from "../controllers/adminController";
-import { authMiddleware } from "../middlewares/authMiddleware";
+import { Router, Request, Response } from 'express';
+import { deleteUser, getDashboardStats, updateUserStatus, getFoodDonations, deleteFoodDonation } from '../controllers/adminController';
+import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
 
@@ -21,7 +21,7 @@ router.delete('/food-donations/:donationId', authMiddleware(['admin']), deleteFo
 
 // Placeholder route for saving settings (to be implemented)
 router.put('/settings', authMiddleware(['admin']), (req: Request, res: Response) => {
-  res.status(200).json({ message: "Settings saved successfully" });
+  res.status(200).json({ message: 'Settings saved successfully' });
 });
 
 export default router;
