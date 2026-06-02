@@ -12,8 +12,20 @@ declare module 'express-serve-static-core' {
 }
 
 if (!process.env.JWT_SECRET) {
-  console.error('JWT_SECRET is not defined in environment variables.');
+  console.error('FATAL: JWT_SECRET is not defined in environment variables.');
   process.exit(1);  // Exit application if no JWT_SECRET
+}
+
+// Reject the historically-committed weak secret and obviously-insecure values.
+const WEAK_SECRETS = ['supersecretkey', 'secret', 'changeme', 'jwtsecret'];
+if (
+  WEAK_SECRETS.includes(process.env.JWT_SECRET.toLowerCase()) ||
+  process.env.JWT_SECRET.length < 32
+) {
+  console.error(
+    'FATAL: JWT_SECRET is weak or a known default. Set a strong random secret (>= 32 chars).'
+  );
+  process.exit(1);
 }
 
 export const authMiddleware = (roles: string[] = []) => {
@@ -25,11 +37,10 @@ export const authMiddleware = (roles: string[] = []) => {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { _id: string; role: string };
-      req.user = { id: decoded._id, role: decoded.role };
-      // req.user = {}; 
-       if (roles.length && !roles.includes(decoded.role)) {
-        
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string; role: string };
+      req.user = { id: decoded.id, role: decoded.role };
+
+      if (roles.length && !roles.includes(decoded.role)) {
         return res.status(403).json({ message: 'Forbidden: Access denied' });
       }
 

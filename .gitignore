@@ -57,4 +57,11 @@ Backend/.env
 .env.*.local
 *.swp
 
+# Internal planning/working docs — never publish (repo is public)
+.project-notes/
+PROJECT_MEMORY.md
+AUDIT_REPORT.md
+IMPLEMENTATION_PLAN.md
+CHANGELOG.md
+
 config.bat

@@ -22,7 +22,7 @@ function PrivateRouteComponent({ children, allowedRoles }: PrivateRouteProps) {
 
   // Redirect to login if not authenticated
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   // Check role-based access if roles are specified
