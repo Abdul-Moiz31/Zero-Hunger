@@ -1,407 +1,232 @@
-import { IUser } from './../models/User';
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import User from '../models/User';
 import Food from '../models/Food';
-import mongoose from 'mongoose';
-import { sendVolunteerConfirmationEmail } from '../emails/sendVolunteerConfirmationEmail';
 import Notification from '../models/Notification';
+import { sendVolunteerConfirmationEmail } from '../emails/sendVolunteerConfirmationEmail';
+import { asyncHandler } from '../utils/asyncHandler';
+import { AppError } from '../utils/AppError';
+import { emitNotification } from '../utils/notify';
 
 // Dashboard stats for NGO
-export const getNgoStats = async (req: Request, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    const ngoId = req.user.id;
+export const getNgoStats = asyncHandler(async (req: Request, res: Response) => {
+  const ngoId = req.user!.id;
 
-    const totalVolunteers = await User.countDocuments({
-      ngoId,
-      role: 'volunteer',
-      isApproved: true,
-    });
+  const [totalVolunteers, totalCompletedDonations, totalPendingDonations] = await Promise.all([
+    User.countDocuments({ ngoId, role: 'volunteer', isApproved: true }),
+    Food.countDocuments({ ngoId, status: 'completed' }),
+    Food.countDocuments({ ngoId, status: 'assigned' }),
+  ]);
 
-    const totalCompletedDonations = await Food.countDocuments({
-      ngoId,
-      status: 'completed',
-    });
+  res.status(200).json({ totalVolunteers, totalCompletedDonations, totalPendingDonations });
+});
 
-    const totalPendingDonations = await Food.countDocuments({
-      ngoId,
-      status: 'available',
-    });
+// Volunteers linked to this NGO (by ngoId, falling back to org name for legacy data)
+export const getMyVolunteers = asyncHandler(async (req: Request, res: Response) => {
+  const ngoId = req.user!.id;
+  const ngo = await User.findById(ngoId);
+  if (!ngo) throw new AppError('NGO not found', 404);
 
-    res.status(200).json({
-      totalVolunteers,
-      totalCompletedDonations,
-      totalPendingDonations,
-    });
-  } catch (error) {
-    console.error('Error fetching NGO stats:', error);
-    res.status(500).json({ message: 'Failed to fetch NGO stats', error });
-  }
-};
+  const volunteers = await User.find({
+    role: 'volunteer',
+    $or: [{ ngoId }, { organization_name: ngo.organization_name }],
+  }).select('-password');
 
+  res.status(200).json(volunteers);
+});
 
-// View all volunteers linked to logged-in NGO
-export const getMyVolunteers = async (req: Request, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    const ngoId = req.user.id;
-
-    const ngo=await User.findById(ngoId);
-
-
-    // Aggregate to get volunteers and their completed donation counts
-    const volunteers = await User.find({role:'volunteer',organization_name:ngo?.organization_name});
-
-    res.status(200).json(volunteers);
-  } catch (error) {
-    console.error('Error fetching volunteers:', error);
-    res.status(500).json({ message: 'Failed to fetch volunteers', error });
-  }
-};
-
-// foodController.js
-export const claimFood = async (req: Request, res: Response) => {
+// NGO claims an available food donation
+export const claimFood = asyncHandler(async (req: Request, res: Response) => {
   const { foodId } = req.body;
-  const userId = req.user!.id; // Assuming user is available from authentication middleware
-  
-  if (!foodId) {
-    return res.status(400).json({ success: false, message: 'Food ID is required' });
-  }
-  
-  try {
-    // Find the food listing and update it
-    const updatedFood = await Food.findByIdAndUpdate(
-      foodId,
-      { 
-        ngoId: userId,
-        status: 'assigned', // Changed from 'pending' to 'assigned' to match your schema enum
-        acceptance_time: new Date() // Record when the food was claimed
-      },
-      { new: true, runValidators: true } // Return the updated document and validate against schema
-    );
-    
-    if (!updatedFood) {
-      return res.status(404).json({ success: false, message: 'Food listing not found' });
-    }
-    
-    // Notify the donor about the claim
-    const donor = await User.findById(updatedFood.donorId);
-    if (donor) {
-      await Notification.create({
-        recipientId: updatedFood.donorId,
-        message: `Your donation "${updatedFood.title}" has been claimed by an NGO`,
-        taskId: updatedFood._id,
-        read: false,
-      });
-    }
+  const ngoId = req.user!.id;
 
-    // Return the updated food listing
-    return res.status(200).json({ 
-      success: true, 
-      message: 'Food claimed successfully', 
-      data: updatedFood 
-    });
-    
-  } catch (error) {
-    console.error('Error claiming food:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Server error while claiming food', 
-      error: (error as Error).message,
-    });
-  }
-};
+  const food = await Food.findById(foodId);
+  if (!food) throw new AppError('Food listing not found', 404);
+  if (food.ngoId) throw new AppError('This donation has already been claimed', 409);
 
-export const getClaimedFoods = async (req: Request, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    const ngoId = req.user.id;
+  food.ngoId = new mongoose.Types.ObjectId(ngoId) as never;
+  food.status = 'assigned';
+  food.acceptance_time = new Date();
+  await food.save();
 
-    const claimedFoods = await Food.find({
-      ngoId,
-      status: 'assigned',
-    }).populate({
-        path: 'donorId volunteerId',
-        model: User,
-        select: 'name email', 
-      })
-      .sort({ acceptance_time: -1 });
+  const ngo = await User.findById(ngoId);
+  await emitNotification({
+    recipientId: food.donorId,
+    message: `Your donation "${food.title}" has been claimed by ${ngo?.organization_name || 'an NGO'}.`,
+    taskId: food._id,
+    type: 'claimed',
+  });
 
-    res.status(200).json({
-      success: true,
-      data: claimedFoods,
-    });
-  } catch (error) {
-    console.error('Error fetching claimed foods:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch claimed foods',
-      error: (error as Error).message,
-    });
-  }
-};
+  res.status(200).json({ success: true, message: 'Food claimed successfully', data: food });
+});
 
+export const getClaimedFoods = asyncHandler(async (req: Request, res: Response) => {
+  const ngoId = req.user!.id;
 
-// Delete volunteer
-export const deleteVolunteer = async (req: Request, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    const { id } = req.params;
-    const ngoId = req.user.id;
-    console.log('Deleting volunteer with ID:', id, 'for NGO ID:', ngoId);
+  const claimedFoods = await Food.find({
+    ngoId,
+    status: { $in: ['assigned', 'in_progress'] },
+  })
+    .populate({ path: 'donorId volunteerId', select: 'name email' })
+    .sort({ acceptance_time: -1 });
 
-    const ngo = await User.findById(ngoId);
-    console.log('NGO found:', ngo);
-    if (!ngo) {
-      return res.status(404).json({ success: false, message: 'NGO not found' });
-    }
+  res.status(200).json({ success: true, data: claimedFoods });
+});
 
-    const volunteer = await User.findOne({
-      _id: id,
-      role: 'volunteer',
-      organization_name: ngo.organization_name,
-    });
-    // console.log("Volunteer found:", volunteer);
-    if (!volunteer) {
-      return res.status(404).json({
-        success: false,
-        message: 'Volunteer not found or not associated with this NGO',
-      });
-    }
+// Delete a volunteer that belongs to this NGO
+export const deleteVolunteer = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const ngoId = req.user!.id;
 
-    await User.findByIdAndDelete(id);
-    // console.log("Volunteer deleted successfully");
+  const ngo = await User.findById(ngoId);
+  if (!ngo) throw new AppError('NGO not found', 404);
 
-    res.status(200).json({
-      success: true,
-      message: 'Volunteer deleted successfully',
-    });
-  } catch (error) {
-    console.error('Error deleting volunteer:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete volunteer',
-      error: (error as Error).message,
-    });
-  }
-};  
-export const updateVolunteer = async (req: Request, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    const { id } = req.params;
-    const { name, email, contact_number } = req.body;
-    const ngoId = req.user.id;
+  const volunteer = await User.findOne({
+    _id: id,
+    role: 'volunteer',
+    $or: [{ ngoId }, { organization_name: ngo.organization_name }],
+  });
+  if (!volunteer) throw new AppError('Volunteer not found or not associated with this NGO', 404);
 
-    // Validate input
-    if (!name || !email || !contact_number) {
-      return res.status(400).json({ success: false, message: 'Name, email, and contact number are required' });
-    }
+  await User.findByIdAndDelete(id);
+  res.status(200).json({ success: true, message: 'Volunteer deleted successfully' });
+});
 
-    // Find the NGO
-    const ngo = await User.findById(ngoId);
-    if (!ngo) {
-      return res.status(404).json({ success: false, message: 'NGO not found' });
-    }
+export const updateVolunteer = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name, email, contact_number } = req.body;
+  const ngoId = req.user!.id;
 
-    // Find and update the volunteer
-    const volunteer = await User.findOneAndUpdate(
-      { _id: id, role: 'volunteer', organization_name: ngo.organization_name },
-      { name, email, contact_number },
-      { new: true, runValidators: true }
-    );
+  const ngo = await User.findById(ngoId);
+  if (!ngo) throw new AppError('NGO not found', 404);
 
-    if (!volunteer) {
-      return res.status(404).json({
-        success: false,
-        message: 'Volunteer not found or not associated with this NGO',
-      });
-    }
+  const volunteer = await User.findOneAndUpdate(
+    { _id: id, role: 'volunteer', $or: [{ ngoId }, { organization_name: ngo.organization_name }] },
+    { name, email, contact_number },
+    { new: true, runValidators: true }
+  ).select('-password');
+  if (!volunteer) throw new AppError('Volunteer not found or not associated with this NGO', 404);
 
-    res.status(200).json({
-      success: true,
-      message: 'Volunteer updated successfully',
-      data: volunteer,
-    });
-  } catch (error) {
-    console.error('Error updating volunteer:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update volunteer',
-      error: (error as Error).message,
+  res.status(200).json({ success: true, message: 'Volunteer updated successfully', data: volunteer });
+});
+
+// NGO creates a volunteer directly (auto-approved, emailed a generated password)
+export const addVolunteer = asyncHandler(async (req: Request, res: Response) => {
+  const { name, email, contact_number } = req.body;
+  const ngoId = req.user!.id;
+
+  const ngo = await User.findById(ngoId);
+  if (!ngo || ngo.role !== 'ngo') throw new AppError('NGO not found', 404);
+
+  const existingVolunteer = await User.findOne({ email });
+  if (existingVolunteer) throw new AppError('A user with this email already exists', 409);
+
+  const randomPassword = Math.random().toString(36).slice(-10);
+  const registeredTime = new Date();
+
+  const volunteer = new User({
+    name,
+    email,
+    password: randomPassword,
+    contact_number,
+    role: 'volunteer',
+    organization_name: ngo.organization_name,
+    status: 'Active',
+    completedOrders: 0,
+    joinedDate: registeredTime,
+    ngoId,
+    isApproved: true,
+  });
+  await volunteer.save();
+
+  await sendVolunteerConfirmationEmail({
+    to: email,
+    name,
+    password: randomPassword,
+    organization_name: ngo.organization_name || '',
+    registered_time: registeredTime.toISOString(),
+  });
+
+  const volunteerResponse = await User.findById(volunteer._id).select('-password');
+  res.status(201).json(volunteerResponse);
+});
+
+// NGO updates the status of one of its claimed foods
+export const updateFoodStatus = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const ngoId = new mongoose.Types.ObjectId(req.user!.id);
+
+  const food = await Food.findOneAndUpdate(
+    { _id: id, ngoId },
+    { status, ...(status === 'completed' ? { delivered_time: new Date() } : {}) },
+    { new: true }
+  ).populate('volunteerId', 'name');
+  if (!food) throw new AppError('Food donation not found', 404);
+
+  if (status === 'completed' && food.donorId) {
+    const volunteerName = (food.volunteerId as unknown as { name?: string })?.name || 'a volunteer';
+    await emitNotification({
+      recipientId: food.donorId,
+      message: `Your donation "${food.title}" has been completed by ${volunteerName}.`,
+      taskId: food._id,
+      type: 'completed',
     });
   }
-};
-// Add volunteer (Updated to send confirmation email)
-export const addVolunteer = async (req: Request, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    const { name, email, contact_number } = req.body;
-    const ngoId = req.user.id;
 
-    // Validate input
-    if (!name || !email || !contact_number) {
-      return res.status(400).json({ success: false, message: 'Name, email, and contact number are required' });
-    }
+  res.status(200).json({ message: 'Food status updated successfully', food });
+});
 
-    // Find the NGO
-    const ngo = await User.findById(ngoId);
-    if (!ngo || ngo.role !== 'ngo') {
-      return res.status(404).json({ success: false, message: 'NGO not found' });
-    }
+export const deleteClaimedFood = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const ngoId = req.user!.id;
 
-    // Check for duplicate email
-    const existingVolunteer = await User.findOne({ email });
-    if (existingVolunteer) {
-      return res.status(400).json({ success: false, message: 'Volunteer with this email already exists' });
-    }
+  const food = await Food.findOneAndDelete({ _id: id, ngoId });
+  if (!food) throw new AppError('Food donation not found', 404);
 
-    // Generate a random password
-    const randomPassword = Math.random().toString(36).slice(-8);
-    const registeredTime = new Date();
+  res.status(200).json({ message: 'Claimed food deleted successfully' });
+});
 
-    // Create new volunteer
-    const volunteer = new User({
-      name,
-      email,
-      password: randomPassword, 
-      contact_number,
-      role: 'volunteer',
-      organization_name: ngo.organization_name,
-      status: 'Active',
-      completedOrders: 0,
-      joinedDate: registeredTime,
-      ngoId,
-      isApproved: true,
-      address: '',
-    });
+// NGO assigns a volunteer to a claimed food task
+export const assignVolunteerToFood = asyncHandler(async (req: Request, res: Response) => {
+  const { volunteerId, foodId } = req.body;
+  const ngoId = req.user!.id;
 
-    await volunteer.save();
+  const food = await Food.findOne({ _id: foodId, ngoId });
+  if (!food) throw new AppError('Food item not found or not claimed by your NGO', 404);
 
-    // Send confirmation email
-    await sendVolunteerConfirmationEmail({
-      to: email,
-      name,
-      password: randomPassword,
-      organization_name: ngo.organization_name,
-      registered_time: registeredTime.toISOString(),
-    });
+  const volunteer = await User.findOne({ _id: volunteerId, role: 'volunteer' });
+  if (!volunteer) throw new AppError('Volunteer not found', 404);
 
-    // Return the saved volunteer (excluding password)
-    
-     const volunteerResponse = await User.findById(volunteer._id).select('-password');
-res.status(201).json(volunteerResponse);  
-  } catch (error) {
-    console.error('Error adding volunteer:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to add volunteer',
-      error: (error as Error).message,
-    });
-  }
-};
+  food.volunteerId = new mongoose.Types.ObjectId(volunteerId) as never;
+  food.status = 'assigned';
+  await food.save();
 
-// Update Food Status
-export const updateFoodStatus = async (req: Request, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    const { id } = req.params;
-    const { status } = req.body;
-    const validStatuses = ['available', 'in_progress', 'assigned', 'completed'];
-    if (!status || !validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
-    }
-    const ngoId = new mongoose.Types.ObjectId(req.user!.id);
-    const food = await Food.findOneAndUpdate(
-      { _id: id, ngoId },
-      { status },
-      { new: true }
-    ).populate('volunteerId', 'name');
-    if (!food) {
-      return res.status(404).json({ message: 'Food donation not found' });
-    }
-    if (status === 'completed' && food.donorId) {
-      const volunteerName = food.volunteerId ? (food.volunteerId as unknown as { name: string }).name : 'no volunteer';
-      await Notification.create({
-        recipientId: food.donorId,
-        message: `Your donation "${food.title}" has been completed by  ${volunteerName}.`,
-        taskId: food._id,
-        read: false,
-      });
-    }
-    res.status(200).json({ message: 'Food status updated successfully', food });
-  } catch (error) {
-    console.error('Error updating food status:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
+  const ngo = await User.findById(ngoId);
+  await emitNotification({
+    recipientId: volunteer._id,
+    message: `A new task "${food.title}" has been assigned to you by ${ngo?.organization_name || 'an NGO'}.`,
+    taskId: food._id,
+    type: 'assigned',
+  });
 
-// Delete Claimed Food
-export const deleteClaimedFood = async (req: Request, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    const { id } = req.params;
-    const ngoId = req.user.id;
-    const food = await Food.findOneAndDelete({ _id: id, ngoId });
-    if (!food) {
-      return res.status(404).json({ message: 'Food donation not found' });
-    }
-    res.status(200).json({ message: 'Claimed food deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting claimed food:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-// AssignVolunteerToFood
+  res.status(200).json({ message: 'Volunteer assigned successfully', food });
+});
 
-export const assignVolunteerToFood = async (req: Request, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    const { volunteerId, foodId } = req.body;
-    const food = await Food.findById(foodId).populate('ngoId');
-    if (!food || !food.ngoId) {
-      return res.status(404).json({ message: 'Food item not found' });
-    }
+// NGO notifications
+export const getNgoNotifications = asyncHandler(async (req: Request, res: Response) => {
+  const notifications = await Notification.find({ recipientId: req.user!.id })
+    .populate('taskId', 'title')
+    .sort({ createdAt: -1 });
+  res.status(200).json(notifications);
+});
 
-    const volunteer = await User.findById(volunteerId);
-    if (!volunteer) {
-      return res.status(404).json({ message: 'Volunteer not found' });
-    }
-
-    food.volunteerId = volunteerId;
-    food.status = 'assigned';
-    await food.save();
-
-    // Create a notification for the volunteer
-    const ngo = typeof food.ngoId === 'object' && food.ngoId !== null && 'name' in food.ngoId ? (food.ngoId as unknown as IUser) : null;
-    if (ngo) {
-      await Notification.create({
-        recipientId: volunteerId,
-        message: `A new task "${food.title}" has been assigned to you by ${ngo.organization_name || 'an NGO'}`,
-        taskId: foodId,
-      });
-    }
-
-    res.status(200).json({ message: 'Volunteer assigned successfully', food });
-  } catch (error) {
-    console.error('Error assigning volunteer:', error);
-    res.status(500).json({ message: 'Failed to assign volunteer', error });
-  }
-};
+export const markNgoNotificationRead = asyncHandler(async (req: Request, res: Response) => {
+  const notification = await Notification.findOneAndUpdate(
+    { _id: req.params.notificationId, recipientId: req.user!.id },
+    { read: true },
+    { new: true }
+  );
+  if (!notification) throw new AppError('Notification not found', 404);
+  res.status(200).json({ message: 'Notification marked as read', notification });
+});

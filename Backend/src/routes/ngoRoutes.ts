@@ -1,47 +1,41 @@
 import { Router } from 'express';
-import { getMyVolunteers, claimFood, getNgoStats, getClaimedFoods, assignVolunteerToFood, deleteVolunteer, updateVolunteer, addVolunteer, updateFoodStatus, deleteClaimedFood } from '../controllers/ngoController';
+import {
+  getMyVolunteers,
+  claimFood,
+  getNgoStats,
+  getClaimedFoods,
+  assignVolunteerToFood,
+  deleteVolunteer,
+  updateVolunteer,
+  addVolunteer,
+  updateFoodStatus,
+  deleteClaimedFood,
+  getNgoNotifications,
+  markNgoNotificationRead,
+} from '../controllers/ngoController';
 import { authMiddleware } from '../middlewares/authMiddleware';
-import Notification from '../models/Notification';
+import { validateBody } from '../middlewares/validate';
+import {
+  claimFoodSchema,
+  assignVolunteerSchema,
+  volunteerSchema,
+  updateFoodStatusSchema,
+} from '../validators/schemas';
 
 const router = Router();
+const ngoOnly = authMiddleware(['ngo']);
 
-router.get('/volunteers', authMiddleware(['ngo']), getMyVolunteers);
-router.post('/claim/food', authMiddleware(['ngo']), claimFood);
-router.get('/claimed/foods', authMiddleware(['ngo']), getClaimedFoods);
-router.get('/stats', authMiddleware(['ngo']), getNgoStats);
-router.post('/assign-volunteer', authMiddleware(['ngo']), assignVolunteerToFood);
-router.delete('/volunteers/:id', authMiddleware(['ngo']), deleteVolunteer);
-router.put('/volunteers/:id', authMiddleware(['ngo']), updateVolunteer);
-router.post('/volunteers', authMiddleware(['ngo']), addVolunteer);
-router.patch('/food/:id/status', authMiddleware(['ngo']), updateFoodStatus);
-router.delete('/claimed-food/:id', authMiddleware(['ngo']), deleteClaimedFood);
-router.get('/notifications', authMiddleware(['ngo']), async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    const notifications = await Notification.find({ recipientId: req.user.id }).sort({ createdAt: -1 });
-    
-    res.status(200).json(notifications);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch notifications', error });
-  }
-});
-router.patch('/notifications/:notificationId/read', authMiddleware(['ngo']), async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not authenticated' });
-    }
-    const notification = await Notification.findOneAndUpdate(
-      { _id: req.params.notificationId, recipientId: req.user.id },
-      { read: true },
-      { new: true }
-    );
-    if (!notification) return res.status(404).json({ message: 'Notification not found' });
-    res.status(200).json({ message: 'Notification marked as read', notification });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to mark notification as read', error });
-  }
-});
+router.get('/volunteers', ngoOnly, getMyVolunteers);
+router.post('/claim/food', ngoOnly, validateBody(claimFoodSchema), claimFood);
+router.get('/claimed/foods', ngoOnly, getClaimedFoods);
+router.get('/stats', ngoOnly, getNgoStats);
+router.post('/assign-volunteer', ngoOnly, validateBody(assignVolunteerSchema), assignVolunteerToFood);
+router.delete('/volunteers/:id', ngoOnly, deleteVolunteer);
+router.put('/volunteers/:id', ngoOnly, validateBody(volunteerSchema), updateVolunteer);
+router.post('/volunteers', ngoOnly, validateBody(volunteerSchema), addVolunteer);
+router.patch('/food/:id/status', ngoOnly, validateBody(updateFoodStatusSchema), updateFoodStatus);
+router.delete('/claimed-food/:id', ngoOnly, deleteClaimedFood);
+router.get('/notifications', ngoOnly, getNgoNotifications);
+router.patch('/notifications/:notificationId/read', ngoOnly, markNgoNotificationRead);
 
 export default router;
