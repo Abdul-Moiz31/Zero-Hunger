@@ -1,15 +1,31 @@
 import express from 'express';
-import { forgotPassword, resetPassword , getOrgsNames , updateProfile  ,getOwnUser, login, register  } from '../controllers/authController';
+import {
+  forgotPassword,
+  resetPassword,
+  getOrgsNames,
+  updateProfile,
+  getOwnUser,
+  login,
+  register,
+} from '../controllers/authController';
 import { authMiddleware } from '../middlewares/authMiddleware';
-const router = express.Router();
-router.post('/register', register);
-// Login route blocks unapproved users
-router.post('/login', login);
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password/:token', resetPassword);
-router.get('/org-names', getOrgsNames);
-router.put('/update-profile', authMiddleware(), updateProfile);
+import { validateBody } from '../middlewares/validate';
+import {
+  registerSchema,
+  loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  updateProfileSchema,
+} from '../validators/schemas';
 
-// me route
-router.get('/me',authMiddleware(),getOwnUser);
+const router = express.Router();
+
+router.post('/register', validateBody(registerSchema), register);
+router.post('/login', validateBody(loginSchema), login);
+router.post('/forgot-password', validateBody(forgotPasswordSchema), forgotPassword);
+router.post('/reset-password/:token', validateBody(resetPasswordSchema), resetPassword);
+router.get('/org-names', getOrgsNames);
+router.put('/update-profile', authMiddleware(), validateBody(updateProfileSchema), updateProfile);
+router.get('/me', authMiddleware(), getOwnUser);
+
 export default router;

@@ -1,3 +1,5 @@
+import { env } from '../config/env';
+
 interface FileWithBuffer {
   buffer: Buffer;
   size: number;
@@ -9,8 +11,7 @@ const uploadImage = async (file: FileWithBuffer) => {
     if (file.size > 5 * 1024 * 1024) throw new Error('File size exceeds 5MB');
 
     const base64Image = file.buffer.toString('base64');
-    const key = process.env.IMGBB_KEY;
-    if (!key) throw new Error('IMGBB API key is not defined');
+    const key = env.IMGBB_KEY;
 
     const formData = new FormData();
     formData.append('image', base64Image);
