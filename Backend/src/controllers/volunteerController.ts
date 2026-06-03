@@ -86,7 +86,8 @@ export const updateTaskStatus = asyncHandler(async (req: Request, res: Response)
 export const getVolunteerNotifications = asyncHandler(async (req: Request, res: Response) => {
   const notifications = await Notification.find({ recipientId: req.user!.id })
     .populate('taskId', 'title')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .limit(50);
   res.status(200).json(notifications);
 });
 

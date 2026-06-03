@@ -17,11 +17,18 @@ export default defineConfig({
     assetsDir: 'assets',
     rollupOptions: {
       output: {
-        assetFileNames: 'assets/[name].[ext]',
-        chunkFileNames: 'assets/[name].js',
-        entryFileNames: 'assets/[name].js'
-      }
-    }
+        // Split large third-party libraries into their own cacheable chunks.
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          motion: ['framer-motion'],
+          mui: ['@mui/material', '@emotion/react', '@emotion/styled'],
+          socket: ['socket.io-client'],
+        },
+        assetFileNames: 'assets/[name].[hash].[ext]',
+        chunkFileNames: 'assets/[name].[hash].js',
+        entryFileNames: 'assets/[name].[hash].js',
+      },
+    },
   },
-  base: './'
+  base: './',
 });

@@ -155,7 +155,8 @@ export const getNotifications = asyncHandler(async (req: Request, res: Response)
   const recipientId = new mongoose.Types.ObjectId(req.user!.id);
   const notifications = await Notification.find({ recipientId })
     .populate('taskId', 'title')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .limit(50);
   res.status(200).json(notifications);
 });
 
