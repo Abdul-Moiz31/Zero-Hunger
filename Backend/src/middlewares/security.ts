@@ -3,9 +3,13 @@ import rateLimit from 'express-rate-limit';
 /**
  * Rate limiters. Auth and contact endpoints are stricter to deter brute-force
  * and email-bomb abuse; a looser global limiter protects the rest of the API.
+ * Disabled under NODE_ENV=test so the suite isn't throttled.
  */
 
 const message = (m: string) => ({ message: m });
+
+const isTest = process.env.NODE_ENV === 'test';
+const skip = () => isTest;
 
 // 5 attempts / 15 min on sensitive auth actions.
 export const authLimiter = rateLimit({
@@ -13,6 +17,7 @@ export const authLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  skip,
   message: message('Too many attempts. Please try again in a few minutes.'),
 });
 
@@ -22,6 +27,7 @@ export const contactLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  skip,
   message: message('Too many messages sent. Please try again later.'),
 });
 
@@ -31,5 +37,6 @@ export const globalLimiter = rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
+  skip,
   message: message('Too many requests. Please slow down.'),
 });
