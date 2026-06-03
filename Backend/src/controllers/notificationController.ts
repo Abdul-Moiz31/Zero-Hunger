@@ -20,6 +20,7 @@ export const getNotifications = asyncHandler(async (req: Request, res: Response)
   if (!req.user?.id) throw new AppError('User not authenticated', 401);
   const notes = await Notification.find({ recipientId: req.user.id })
     .populate('taskId', 'title')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .limit(50);
   res.status(200).json(notes);
 });
