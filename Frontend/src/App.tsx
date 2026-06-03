@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { PrivateRoute } from './components/PrivateRoute';
 import Header from './components/Header';
+import Hero from './components/landing/Hero';
 import ImpactStats from './components/landing/ImpactStats';
 import HowItWorks from './components/landing/HowItWorks';
 import Roles from './components/landing/Roles';
@@ -17,7 +18,7 @@ import { NGOProvider } from './contexts/ngoContext';
 import { VolunteerProvider } from './contexts/volunteerContext';
 import { FoodListingsProvider } from './contexts/FoodContext';
 
-// Code-split heavy / authenticated routes so the landing page loads fast.
+// Code-split heavy / authenticated routes
 const AuthPage = lazy(() => import('./components/auth/AuthPage'));
 const ForgotPassword = lazy(() => import('./components/auth/ForgotPassword'));
 const ResetPassword = lazy(() => import('./components/auth/ResetPassword'));
@@ -28,11 +29,13 @@ const VolunteerDashboard = lazy(() => import('./components/dashboard/VolunteerDa
 const AdminDashboard = lazy(() => import('./components/dashboard/AdminDashboard'));
 const UnauthorizedPage = lazy(() => import('./components/UnauthorizedPage'));
 const Listings = lazy(() => import('./components/Listings'));
+const PublicImpactPage = lazy(() => import('./components/PublicImpactPage'));
 
 const HomePage = () => (
   <div className="min-h-screen">
     <Header />
     <main>
+      <Hero />
       <ImpactStats />
       <HowItWorks />
       <Roles />
@@ -46,8 +49,11 @@ const HomePage = () => (
 );
 
 const RouteFallback = () => (
-  <div className="flex min-h-screen items-center justify-center">
-    <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-green-600" />
+  <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
+    <div className="flex flex-col items-center gap-3">
+      <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-green-100 border-t-green-600" />
+      <p className="text-sm text-gray-400">Loading…</p>
+    </div>
   </div>
 );
 
@@ -68,15 +74,10 @@ function App() {
                       <Route path="/forgot-password" element={<ForgotPassword />} />
                       <Route path="/reset-password/:token" element={<ResetPassword />} />
                       <Route path="/unauthorized" element={<UnauthorizedPage />} />
+                      <Route path="/impact" element={<><Header /><PublicImpactPage /><Footer /></>} />
                       <Route
                         path="/listings"
-                        element={
-                          <>
-                            <Header />
-                            <Listings />
-                            <Footer />
-                          </>
-                        }
+                        element={<><Header /><Listings /><Footer /></>}
                       />
 
                       {/* Protected */}
