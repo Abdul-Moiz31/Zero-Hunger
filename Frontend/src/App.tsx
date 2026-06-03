@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { PrivateRoute } from './components/PrivateRoute';
 import Header from './components/Header';
-import Hero from './components/landing/Hero';
 import ImpactStats from './components/landing/ImpactStats';
 import HowItWorks from './components/landing/HowItWorks';
 import Roles from './components/landing/Roles';
@@ -34,7 +33,6 @@ const HomePage = () => (
   <div className="min-h-screen">
     <Header />
     <main>
-      <Hero />
       <ImpactStats />
       <HowItWorks />
       <Roles />
