@@ -109,10 +109,13 @@ const NGODashboard = () => {
     updateFoodStatus,
     deleteClaimedFood,
     confirmDelivery,
+    rateVolunteer,
     notifications,
     getNotifications,
     markNotificationAsRead,
   } = useNGOContext();
+
+  const [ratingModal, setRatingModal] = useState<{ volunteerId: string; foodId: string; volunteerName: string; taskTitle: string } | null>(null);
 
   // Calculate unread notifications count for the badge
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -346,6 +349,17 @@ const NGODashboard = () => {
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
         },
       });
+    }
+  };
+
+  const handleRateVolunteer = async (stars: number, comment?: string) => {
+    if (!ratingModal) return;
+    try {
+      await rateVolunteer(ratingModal.volunteerId, ratingModal.foodId, stars, comment);
+      toast.success(`${stars}-star rating submitted!`, { duration: 3000, position: "top-right" });
+      setRatingModal(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to submit rating", { duration: 3000, position: "top-right" });
     }
   };
 
@@ -893,6 +907,23 @@ const NGODashboard = () => {
                       Delivery confirmed {selectedFood.ngo_confirmed_at ? `on ${new Date(selectedFood.ngo_confirmed_at).toLocaleDateString()}` : ''}
                     </div>
                   )}
+                  {/* Rate volunteer — shown after delivery is confirmed and volunteer is assigned */}
+                  {selectedFood.ngo_confirmed && selectedFood.volunteerId && (
+                    <button
+                      onClick={() => {
+                        setRatingModal({
+                          volunteerId: selectedFood.volunteerId!._id,
+                          foodId: selectedFood._id,
+                          volunteerName: selectedFood.volunteerId!.name,
+                          taskTitle: selectedFood.title,
+                        });
+                        setIsModalOpen(false);
+                      }}
+                      className="mt-2 w-full flex items-center justify-center gap-2 bg-amber-500 text-white py-2 rounded-lg hover:bg-amber-400 transition font-semibold"
+                    >
+                      ★ Rate Volunteer
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1122,6 +1153,14 @@ const NGODashboard = () => {
           onClose={handleCloseForm}
         />
       )}
+      {ratingModal && (
+        <RatingModal
+          volunteerName={ratingModal.volunteerName}
+          taskTitle={ratingModal.taskTitle}
+          onClose={() => setRatingModal(null)}
+          onSubmit={handleRateVolunteer}
+        />
+      )}
     </div>
   );
 };
@@ -1208,5 +1247,72 @@ const TabButton = ({
     {label}
   </button>
 );
+
+const RatingModal = ({
+  volunteerName,
+  taskTitle,
+  onClose,
+  onSubmit,
+}: {
+  volunteerName: string;
+  taskTitle: string;
+  onClose: () => void;
+  onSubmit: (stars: number, comment?: string) => Promise<void>;
+}) => {
+  const [stars, setStars] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (stars === 0) return;
+    setSubmitting(true);
+    await onSubmit(stars, comment || undefined);
+    setSubmitting(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Rate Volunteer</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+        </div>
+        <p className="mb-1 text-sm text-gray-700"><span className="font-medium">{volunteerName}</span></p>
+        <p className="mb-4 text-xs text-gray-500">{taskTitle}</p>
+
+        <div className="mb-4 flex justify-center gap-2">
+          {[1, 2, 3, 4, 5].map((s) => (
+            <button
+              key={s}
+              onMouseEnter={() => setHover(s)}
+              onMouseLeave={() => setHover(0)}
+              onClick={() => setStars(s)}
+              className={`text-3xl transition ${(hover || stars) >= s ? 'text-amber-400' : 'text-gray-200'}`}
+            >
+              ★
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Add a comment (optional)"
+          rows={3}
+          className="w-full resize-none rounded-xl border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 mb-4"
+        />
+
+        <button
+          onClick={handleSubmit}
+          disabled={stars === 0 || submitting}
+          className="w-full rounded-xl bg-amber-500 py-2.5 text-sm font-semibold text-white hover:bg-amber-400 disabled:opacity-40 transition"
+        >
+          {submitting ? 'Submitting…' : 'Submit Rating'}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default NGODashboard;

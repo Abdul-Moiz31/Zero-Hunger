@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import User from '../models/User';
 import Food from '../models/Food';
 import Notification from '../models/Notification';
+import Rating from '../models/Rating';
 import { sendVolunteerConfirmationEmail } from '../emails/sendVolunteerConfirmationEmail';
 import { asyncHandler } from '../utils/asyncHandler';
 import { AppError } from '../utils/AppError';
@@ -212,6 +213,45 @@ export const assignVolunteerToFood = asyncHandler(async (req: Request, res: Resp
 
   res.status(200).json({ message: 'Volunteer assigned successfully', food });
 });
+
+// NGO rates a volunteer after a completed delivery
+export const rateVolunteer = asyncHandler(
+  async (req: Request<{ volunteerId: string }, object, { foodId: string; stars: number; comment?: string }>, res: Response) => {
+    const { volunteerId } = req.params;
+    const { foodId, stars, comment } = req.body;
+    const ngoId = req.user!.id;
+
+    // Verify the food was completed and belongs to this NGO
+    const food = await Food.findOne({ _id: foodId, ngoId, status: 'completed', volunteerId });
+    if (!food) throw new AppError('Completed delivery not found for this volunteer and NGO', 404);
+
+    const volunteer = await User.findOne({ _id: volunteerId, role: 'volunteer' });
+    if (!volunteer) throw new AppError('Volunteer not found', 404);
+
+    // Upsert (allow updating a rating once)
+    await Rating.findOneAndUpdate(
+      { ngoId, foodId },
+      { ngoId, volunteerId, foodId, stars, comment },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Recalculate volunteer's average rating
+    const allRatings = await Rating.find({ volunteerId });
+    const avgRating = allRatings.reduce((s, r) => s + r.stars, 0) / allRatings.length;
+    volunteer.rating = Math.round(avgRating * 10) / 10;
+    await volunteer.save();
+
+    // Notify volunteer
+    await emitNotification({
+      recipientId: volunteer._id,
+      message: `You received a ${stars}-star rating for your delivery of "${food.title}".`,
+      taskId: food._id,
+      type: 'general',
+    });
+
+    res.status(200).json({ message: 'Rating submitted', avgRating: volunteer.rating });
+  }
+);
 
 // NGO inventory: completed deliveries with optional date-range filter
 export const getNgoInventory = asyncHandler(async (req: Request, res: Response) => {

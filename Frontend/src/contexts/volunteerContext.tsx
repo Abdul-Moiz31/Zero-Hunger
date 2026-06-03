@@ -2,6 +2,15 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from "react";
 import api from "@/utils/axios";
 
+export interface RatingRecord {
+  _id: string;
+  stars: number;
+  comment?: string;
+  createdAt: string;
+  ngoId?: { organization_name: string };
+  foodId?: { title: string };
+}
+
 interface VolunteerStats {
   available_Task: number;
   in_progress_task: number;
@@ -43,6 +52,7 @@ interface VolunteerContextType {
   updateTaskStatus: (taskId: string, status: Task["status"], proofFile?: File) => Promise<void>;
   getNotifications: (silent?: boolean) => Promise<void>;
   markNotificationAsRead: (notificationId: string) => Promise<void>;
+  getMyRatings: () => Promise<{ ratings: RatingRecord[]; avg: number; count: number }>;
 }
 
 const VolunteerContext = createContext<VolunteerContextType | undefined>(undefined);
@@ -245,6 +255,11 @@ export function VolunteerProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const getMyRatings = useCallback(async () => {
+    const { data } = await api.get('/volunteer/ratings');
+    return data as { ratings: RatingRecord[]; avg: number; count: number };
+  }, []);
+
   return (
     <VolunteerContext.Provider
       value={{
@@ -258,6 +273,7 @@ export function VolunteerProvider({ children }: { children: React.ReactNode }) {
         updateTaskStatus,
         getNotifications,
         markNotificationAsRead,
+        getMyRatings,
       }}
     >
       {children}

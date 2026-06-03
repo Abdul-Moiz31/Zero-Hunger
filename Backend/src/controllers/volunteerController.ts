@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Food from '../models/Food';
 import User from '../models/User';
 import Notification from '../models/Notification';
+import Rating from '../models/Rating';
 import { asyncHandler } from '../utils/asyncHandler';
 import { AppError } from '../utils/AppError';
 import { emitNotification } from '../utils/notify';
@@ -98,6 +99,20 @@ export const getVolunteerNotifications = asyncHandler(async (req: Request, res: 
     .sort({ createdAt: -1 })
     .limit(50);
   res.status(200).json(notifications);
+});
+
+export const getMyRatings = asyncHandler(async (req: Request, res: Response) => {
+  const volunteerId = req.user!.id;
+  const ratings = await Rating.find({ volunteerId })
+    .populate('ngoId', 'organization_name')
+    .populate('foodId', 'title')
+    .sort({ createdAt: -1 });
+
+  const avg = ratings.length > 0
+    ? Math.round((ratings.reduce((s, r) => s + r.stars, 0) / ratings.length) * 10) / 10
+    : 0;
+
+  res.status(200).json({ ratings, avg, count: ratings.length });
 });
 
 export const markVolunteerNotificationRead = asyncHandler(async (req: Request, res: Response) => {
