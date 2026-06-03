@@ -1,40 +1,41 @@
 import express from 'express';
-import { authMiddleware } from '../middlewares/authMiddleware';
-import * as donorController from '../controllers/donorController';
 import multer from 'multer';
+import { authMiddleware } from '../middlewares/authMiddleware';
+import { validateBody } from '../middlewares/validate';
+import { updateDonationStatusSchema } from '../validators/schemas';
+import * as donorController from '../controllers/donorController';
 
-const upload = multer({ storage: multer.memoryStorage() });
+// Limit uploads to 5MB images; uploadImage also enforces the size server-side.
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 const router = express.Router();
 
-// Create a new donation
-router.post(
-  '/donate',
-  authMiddleware(['donor']),
-  upload.single('img'),
-  donorController.createDonation
-);
+const ALL_ROLES = ['donor', 'volunteer', 'ngo', 'admin'];
 
-// Get donor statistics
-router.get('/stats', authMiddleware(['donor' , 'volunteer' , 'ngo' , 'admin']), donorController.getDonorStats);
+// Create a new donation (multipart; body validated in the controller).
+router.post('/donate', authMiddleware(['donor']), upload.single('img'), donorController.createDonation);
 
-// Get all donations for the donor
-router.get('/my-donations', authMiddleware(['donor' , 'volunteer' , 'ngo' , 'admin']), donorController.getMyDonations);
+router.get('/stats', authMiddleware(ALL_ROLES), donorController.getDonorStats);
+router.get('/my-donations', authMiddleware(ALL_ROLES), donorController.getMyDonations);
 
-// Delete a donation
 router.delete('/donate/:id', authMiddleware(['donor']), donorController.deleteDonation);
 
-// Update donation status (only for donor)
 router.put(
   '/donation/:id/status',
   authMiddleware(['donor']),
+  validateBody(updateDonationStatusSchema),
   donorController.updateDonationStatus
 );
 
-// Get notifications for donor or NGO
-router.get('/Notifications', authMiddleware(['donor', 'ngo', 'volunteer' , 'admin']), donorController.getNotifications);
-
-// Mark a notification as read for donor or NGO
-router.put('/notifications/:notificationId/read', authMiddleware(['donor', 'ngo']), donorController.markNotificationAsRead);
+// Notifications (kept at existing paths for frontend compatibility).
+router.get('/Notifications', authMiddleware(ALL_ROLES), donorController.getNotifications);
+router.put(
+  '/notifications/:notificationId/read',
+  authMiddleware(ALL_ROLES),
+  donorController.markNotificationAsRead
+);
 
 export default router;
