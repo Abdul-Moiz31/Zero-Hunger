@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect, useCallback } from "react";
 import { useDonorContext } from "@/contexts/donorContext";
+import api from "@/utils/axios";
 import {
   Package2,
   Clock,
@@ -487,9 +488,6 @@ const DonorDashboard = () => {
     async (e: React.FormEvent, formData: FormData) => {
       e.preventDefault();
       try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("Authentication token not found");
-
         const submissionData = new FormData();
         submissionData.append("title", formData.title);
         submissionData.append("description", formData.description);
@@ -512,41 +510,24 @@ const DonorDashboard = () => {
           submissionData.append("img", formData.img);
         }
 
-        const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/donor/donate`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: submissionData,
-            credentials: "include",
-          }
-        );
-
-        if (response.status === 201) {
-          const data = await response.json();
-          setDonations((prev) => [data.food, ...prev]);
-          setShowDonationForm(false);
-          toast.success("Donation created successfully!", {
-            duration: 3000,
-            position: "top-right",
-            style: {
-              background: "#16a34a",
-              color: "#ffffff",
-              padding: "12px 24px",
-              borderRadius: "8px",
-              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-            },
-          });
-        } else {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to create donation");
-        }
+        const { data } = await api.post("/donor/donate", submissionData);
+        setDonations((prev) => [data.food, ...prev]);
+        setShowDonationForm(false);
+        toast.success("Donation created successfully!", {
+          duration: 3000,
+          position: "top-right",
+          style: {
+            background: "#16a34a",
+            color: "#ffffff",
+            padding: "12px 24px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+          },
+        });
       } catch (err: any) {
         console.error("Error uploading donation:", err);
         const errorMessage =
-          err.message || "Failed to create donation. Please try again.";
+          err.response?.data?.message || err.message || "Failed to create donation. Please try again.";
         toast.error(errorMessage, {
           duration: 3000,
           position: "top-right",

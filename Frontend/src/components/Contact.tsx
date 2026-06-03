@@ -36,12 +36,7 @@ const Contact = () => {
     }
 
     try {
-      // Debug: Log the API URL being used
-      console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL);
-      console.log('Full URL:', `${import.meta.env.VITE_API_BASE_URL}/contact`);
-      
-      const response = await axios.post('/contact', formData);
-      const data = response.data;
+      await axios.post('/contact', formData);
       setSuccess('Your message has been sent successfully!');
       setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (err: unknown) {

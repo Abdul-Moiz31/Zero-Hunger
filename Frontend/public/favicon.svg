@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#15803d"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#g)"/>
+  <!-- plate -->
+  <circle cx="32" cy="34" r="15" fill="none" stroke="#ffffff" stroke-width="3"/>
+  <!-- heart on the plate -->
+  <path d="M32 41c-5-3.4-8-6.3-8-9.7a4.3 4.3 0 0 1 8-2.1 4.3 4.3 0 0 1 8 2.1c0 3.4-3 6.3-8 9.7z" fill="#ffffff"/>
+  <!-- fork -->
+  <path d="M14 12v10a3 3 0 0 0 3 3v0" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round"/>
+</svg>
