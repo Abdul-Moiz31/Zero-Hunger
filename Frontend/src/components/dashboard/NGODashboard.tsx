@@ -21,6 +21,7 @@ import {
 import { lazy, Suspense } from 'react';
 
 const LiveMap = lazy(() => import('./LiveMap'));
+const InventoryTab = lazy(() => import('./InventoryTab'));
 import toast, { Toaster } from "react-hot-toast";
 import { StatCard, NotificationBell, StatusBadge } from "../ui";
 
@@ -1088,6 +1089,7 @@ const NGODashboard = () => {
               isActive={activeTab === "claimedFoods"}
               onClick={() => setActiveTab("claimedFoods")}
             />
+            <TabButton label="Inventory" isActive={activeTab === "inventory"} onClick={() => setActiveTab("inventory")} />
             <TabButton label="Live Map" isActive={activeTab === "liveMap"} onClick={() => setActiveTab("liveMap")} />
           </div>
           <NotificationBell
@@ -1102,6 +1104,10 @@ const NGODashboard = () => {
         <VolunteersTable />
       ) : activeTab === "donations" ? (
         <DonationsTable />
+      ) : activeTab === "inventory" ? (
+        <Suspense fallback={<div className="flex items-center justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-b-2 border-green-600" /></div>}>
+          <InventoryTab />
+        </Suspense>
       ) : activeTab === "liveMap" ? (
         <Suspense fallback={<div className="h-80 flex items-center justify-center text-gray-400 text-sm">Loading map…</div>}>
           <LiveMap claimedFoods={claimedFoods as any} />

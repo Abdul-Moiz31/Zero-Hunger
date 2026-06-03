@@ -213,6 +213,37 @@ export const assignVolunteerToFood = asyncHandler(async (req: Request, res: Resp
   res.status(200).json({ message: 'Volunteer assigned successfully', food });
 });
 
+// NGO inventory: completed deliveries with optional date-range filter
+export const getNgoInventory = asyncHandler(async (req: Request, res: Response) => {
+  const ngoId = new mongoose.Types.ObjectId(req.user!.id);
+  const days = Math.min(Math.max(parseInt(String(req.query.days || '30')), 1), 365);
+
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+
+  const completedFoods = await Food.find({
+    ngoId,
+    status: 'completed',
+    delivered_time: { $gte: since },
+  })
+    .populate('donorId', 'name')
+    .populate('volunteerId', 'name')
+    .sort({ delivered_time: -1 });
+
+  const totalMeals = completedFoods.reduce((sum, f) => sum + (f.quantity || 0), 0);
+  const totalDeliveries = completedFoods.length;
+
+  // Category breakdown from dietary_info field
+  const categoryMap: Record<string, number> = {};
+  completedFoods.forEach((f) => {
+    const cat = (f.dietary_info as string | undefined)?.trim() || 'Uncategorized';
+    categoryMap[cat] = (categoryMap[cat] || 0) + 1;
+  });
+  const categories = Object.entries(categoryMap).map(([name, count]) => ({ name, count }));
+
+  res.status(200).json({ totalMeals, totalDeliveries, categories, deliveries: completedFoods });
+});
+
 // NGO confirms a completed delivery (closes the accountability loop)
 export const confirmDelivery = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
