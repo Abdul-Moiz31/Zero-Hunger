@@ -11,6 +11,7 @@ export const NOTIFICATION_TYPES = [
   'assigned',
   'in_progress',
   'completed',
+  'delivery_confirmed',
   'approved',
   'general',
 ] as const;

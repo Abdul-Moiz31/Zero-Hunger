@@ -55,6 +55,7 @@ interface NGOContextType {
   addVolunteer: (data: { name: string; email: string; contact_number: string }) => Promise<void>;
   updateFoodStatus: (foodId: string, status: string) => Promise<void>;
   deleteClaimedFood: (foodId: string) => Promise<void>;
+  confirmDelivery: (foodId: string) => Promise<void>;
   getNotifications: () => Promise<void>;
   markNotificationAsRead: (notificationId: string) => Promise<void>;
 }
@@ -189,6 +190,11 @@ export function NGOProvider({ children }: { children: React.ReactNode }) {
     await getClaimedFoods();
   };
 
+  const confirmDelivery = async (foodId: string) => {
+    await api.patch(`/ngo/food/${foodId}/confirm-delivery`);
+    await getClaimedFoods();
+  };
+
   return (
     <NGOContext.Provider
       value={{
@@ -205,6 +211,7 @@ export function NGOProvider({ children }: { children: React.ReactNode }) {
         addVolunteer,
         updateFoodStatus,
         deleteClaimedFood,
+        confirmDelivery,
         getNotifications,
         markNotificationAsRead,
       }}

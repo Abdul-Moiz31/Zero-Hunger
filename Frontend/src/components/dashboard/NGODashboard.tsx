@@ -13,7 +13,9 @@ import {
   Filter,
   DollarSign,
   Eye,
-  Bell, 
+  Bell,
+  ShieldCheck,
+  Image,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { StatCard, NotificationBell, StatusBadge } from "../ui";
@@ -66,7 +68,10 @@ interface Food {
   pickup_window_end: string;
   dietary_info: string;
   img: string;
-  status: "Pending" | "Completed" | "assigned";
+  delivery_proof_img?: string;
+  ngo_confirmed?: boolean;
+  ngo_confirmed_at?: string;
+  status: "Pending" | "Completed" | "assigned" | "completed" | "in_progress";
   contact_number: string;
   acceptance_time: string;
   donorId: { name: string; email: string };
@@ -98,6 +103,7 @@ const NGODashboard = () => {
     addVolunteer,
     updateFoodStatus,
     deleteClaimedFood,
+    confirmDelivery,
     notifications,
     getNotifications,
     markNotificationAsRead,
@@ -335,6 +341,21 @@ const NGODashboard = () => {
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
         },
       });
+    }
+  };
+
+  const handleConfirmDelivery = async (foodId: string) => {
+    try {
+      await confirmDelivery(foodId);
+      toast.success("Delivery confirmed! Donor and volunteer have been notified.", {
+        duration: 3000,
+        position: "top-right",
+      });
+      setError(null);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Failed to confirm delivery";
+      setError(msg);
+      toast.error(msg, { duration: 3000, position: "top-right" });
     }
   };
 
@@ -839,6 +860,34 @@ const NGODashboard = () => {
                       Assign
                     </button>
                   </div>
+                  {/* Proof of delivery & confirm */}
+                  {selectedFood.delivery_proof_img && (
+                    <div>
+                      <p className="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
+                        <Image className="h-4 w-4" /> Delivery proof
+                      </p>
+                      <a href={selectedFood.delivery_proof_img} target="_blank" rel="noopener noreferrer">
+                        <img src={selectedFood.delivery_proof_img} alt="delivery proof" className="h-32 w-full rounded-lg object-cover border" />
+                      </a>
+                    </div>
+                  )}
+                  {(selectedFood.status === 'completed' || selectedFood.status === 'Completed') && !selectedFood.ngo_confirmed && (
+                    <button
+                      onClick={() => {
+                        handleConfirmDelivery(selectedFood._id);
+                        setIsModalOpen(false);
+                      }}
+                      className="mt-2 w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-500 transition font-semibold"
+                    >
+                      <ShieldCheck className="h-4 w-4" /> Confirm Delivery
+                    </button>
+                  )}
+                  {selectedFood.ngo_confirmed && (
+                    <div className="flex items-center gap-2 mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 font-medium">
+                      <ShieldCheck className="h-4 w-4" />
+                      Delivery confirmed {selectedFood.ngo_confirmed_at ? `on ${new Date(selectedFood.ngo_confirmed_at).toLocaleDateString()}` : ''}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
