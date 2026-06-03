@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNGOContext } from "@/contexts/ngoContext";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import {
   Users,
   Package2,
@@ -137,6 +138,16 @@ const NGODashboard = () => {
     }, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Real-time: refresh + toast when a notification arrives.
+  const onRealtime = useCallback(
+    (n: { message: string }) => {
+      getNotifications();
+      toast.success(n.message, { duration: 4000, position: "top-right" });
+    },
+    [getNotifications]
+  );
+  useRealtimeNotifications(onRealtime);
 
   useEffect(() => {
     const activities: Activity[] = [];

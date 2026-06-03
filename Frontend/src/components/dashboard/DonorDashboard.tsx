@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
 import { StatCard, NotificationBell, StatusBadge } from "../ui";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 
 // Define interfaces based on context
 interface Donation {
@@ -568,6 +569,16 @@ const DonorDashboard = () => {
     };
     fetchData();
   }, [getDonorStats, getMyDonations, getNotifications]);
+
+  // Real-time: refresh + toast when a notification arrives.
+  const onRealtime = useCallback(
+    (n: { message: string }) => {
+      getNotifications().catch(() => {});
+      toast.success(n.message, { duration: 4000, position: "top-right" });
+    },
+    [getNotifications]
+  );
+  useRealtimeNotifications(onRealtime);
 
   const Overview = () => (
     <div className="space-y-6">

@@ -1,9 +1,11 @@
 import express from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
 import { env } from './config/env';
 import connectDB from './config/db';
+import { initSocket } from './config/socket';
 import { notFoundHandler, errorHandler } from './middlewares/errorHandler';
 
 import authRoutes from './routes/authRoutes';
@@ -64,11 +66,14 @@ app.use(errorHandler);
  * Binding only after a successful DB connection avoids the "server is up but
  * every request fails" state.
  */
+const httpServer = createServer(app);
+initSocket(httpServer);
+
 async function start() {
   try {
     await connectDB();
-    app.listen(env.PORT, () => {
-      console.log(`🚀 Server running on port ${env.PORT} (${env.NODE_ENV})`);
+    httpServer.listen(env.PORT, () => {
+      console.log(`🚀 Server running on port ${env.PORT} (${env.NODE_ENV}) — realtime enabled`);
     });
   } catch (err) {
     console.error('❌ Failed to start server:', err instanceof Error ? err.message : err);
