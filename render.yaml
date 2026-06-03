@@ -1,0 +1,67 @@
+# Render Blueprint — Zero Hunger
+# Deploys two services: a Node web service (API + Socket.IO) and a static
+# frontend. After the first deploy, set the secret env vars in the Render
+# dashboard (they are marked `sync: false` so they are never stored in git).
+#
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  # ---------------------------------------------------------------------------
+  # Backend — Express API + Socket.IO (persistent web service)
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: zero-hunger-api
+    runtime: node
+    plan: free
+    rootDir: Backend
+    # --include=dev ensures TypeScript + @types are available for the build
+    # even though NODE_ENV=production is set for runtime.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # The frontend's public URL (used for CORS + reset links). Update to the
+      # static site URL after the first deploy, or set CORS_ORIGINS explicitly.
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true # Render generates a strong secret automatically
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: IMGBB_KEY
+        sync: false
+
+  # ---------------------------------------------------------------------------
+  # Frontend — Vite static site
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: zero-hunger-web
+    runtime: static
+    rootDir: Frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeploy: true
+    envVars:
+      # Point the SPA at the API service's URL (include the /api suffix).
+      - key: VITE_API_BASE_URL
+        sync: false
+    routes:
+      # SPA fallback: serve index.html for client-side routes.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
