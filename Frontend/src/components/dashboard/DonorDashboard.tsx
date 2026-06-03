@@ -15,6 +15,8 @@ import {
   Bell,
 } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
+import { StatCard, NotificationBell, StatusBadge } from "../ui";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 
 // Define interfaces based on context
 interface Donation {
@@ -450,7 +452,6 @@ const DonorDashboard = () => {
     "overview"
   );
   const [showDonationForm, setShowDonationForm] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -569,45 +570,22 @@ const DonorDashboard = () => {
     fetchData();
   }, [getDonorStats, getMyDonations, getNotifications]);
 
+  // Real-time: refresh + toast when a notification arrives.
+  const onRealtime = useCallback(
+    (n: { message: string }) => {
+      getNotifications().catch(() => {});
+      toast.success(n.message, { duration: 4000, position: "top-right" });
+    },
+    [getNotifications]
+  );
+  useRealtimeNotifications(onRealtime);
+
   const Overview = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        <DashboardCard
-          icon={Package2}
-          title="Total Donations"
-          stats={[
-            {
-              label: "Total Donations",
-              value: String(stats.totalDonations || 0),
-            },
-          ]}
-          trend="+3 this week"
-          trendUp={true}
-        />
-        <DashboardCard
-          icon={Clock}
-          title="Pending Pickups"
-          stats={[
-            {
-              label: "Pending Pickups",
-              value: String(stats.pendingDonations || 0),
-            },
-          ]}
-          trend="2 expiring soon"
-          trendUp={false}
-        />
-        <DashboardCard
-          icon={CheckCircle}
-          title="Completed"
-          stats={[
-            {
-              label: "Completed Donations",
-              value: String(stats.completedDonations || 0),
-            },
-          ]}
-          trend="+12% this month"
-          trendUp={true}
-        />
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard label="Total donations" value={stats.totalDonations || 0} icon={Package2} accent="green" index={0} />
+        <StatCard label="Pending pickups" value={stats.pendingDonations || 0} icon={Clock} accent="amber" index={1} />
+        <StatCard label="Completed" value={stats.completedDonations || 0} icon={CheckCircle} accent="blue" index={2} />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
@@ -654,20 +632,7 @@ const DonorDashboard = () => {
                 </div>
               </div>
              
-              <span
-                className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap ${
-                  donation.status === "available"
-                    ? "bg-green-100 text-green-700"
-                    : donation.status === "assigned"
-                    ? "bg-blue-100 text-blue-700"
-                    : donation.status === "completed"
-                    ? "bg-gray-200 text-gray-700"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {donation.status.charAt(0).toUpperCase() +
-                  donation.status.slice(1)}
-              </span>
+              <StatusBadge status={donation.status} />
             </div>
           ))}
           {donations.length === 0 && (
@@ -846,74 +811,6 @@ const DonorDashboard = () => {
     );
   };
 
-  const NotificationsDropdown = () => {
-    const handleMarkAsRead = async (id: string) => {
-      try {
-        await markNotificationAsRead(id);
-      } catch (err: any) {
-        console.error("Error marking notification as read:", err);
-        toast.error("Failed to mark notification as read.", {
-          duration: 3000,
-          position: "top-right",
-        });
-      }
-    };
-
-    return (
-      <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
-        <div className="flex justify-between items-center p-4 border-b">
-          <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
-          <button
-            onClick={() => setShowNotifications(false)}
-            className="text-gray-500 hover:text-gray-700"
-            aria-label="Close notifications"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="p-4 space-y-3">
-          {notifications.length === 0 ? (
-            <p className="text-gray-500 text-center text-sm">
-              No notifications available.
-            </p>
-          ) : (
-            notifications.map((notification: Notification) => (
-              <div
-                key={notification._id}
-                className={`p-3 rounded-lg border ${
-                  notification.read ? "bg-gray-50" : "bg-blue-50"
-                }`}
-              >
-                <p
-                  className={`text-sm ${
-                    notification.read
-                      ? "text-gray-600"
-                      : "text-gray-800 font-medium"
-                  }`}
-                >
-                  {notification.message}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {new Date(notification.createdAt).toLocaleString([], {
-                    timeZone: "Asia/Karachi",
-                  })}
-                </p>
-                {!notification.read && (
-                  <button
-                    onClick={() => handleMarkAsRead(notification._id)}
-                    className="text-blue-600 hover:text-blue-800 text-xs mt-1"
-                  >
-                    Mark as Read
-                  </button>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    );
-  };
-
   const styles = `
     .animate-scaleIn {
       animation: scaleIn 0.3s ease-out;
@@ -1002,21 +899,10 @@ const DonorDashboard = () => {
               My Donations
             </button>
           </div>
-          <div className="relative">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 rounded-full hover:bg-gray-200 transition duration-300 relative"
-              aria-label={`Toggle notifications (${unreadCount} unread)`}
-            >
-              <Bell className="w-5 h-5 text-gray-600" />
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-            {showNotifications && <NotificationsDropdown />}
-          </div>
+          <NotificationBell
+            notifications={notifications}
+            onMarkRead={(id) => markNotificationAsRead(id)}
+          />
         </div>
       </div>
 

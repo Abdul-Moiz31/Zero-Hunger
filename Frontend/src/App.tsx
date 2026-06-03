@@ -3,10 +3,12 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { PrivateRoute } from './components/PrivateRoute';
 import Header from './components/Header';
+import Hero from './components/landing/Hero';
+import ImpactStats from './components/landing/ImpactStats';
+import HowItWorks from './components/landing/HowItWorks';
+import Roles from './components/landing/Roles';
+import CtaBand from './components/landing/CtaBand';
 import About from './components/About';
-import Impact from './components/Impact';
-import HowItWorks from './components/HowItWorks';
-import Partners from './components/Partners';
 import Testimonials from './components/Testimonials';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
@@ -30,11 +32,13 @@ const HomePage = () => (
   <div className="min-h-screen">
     <Header />
     <main>
-      <About />
-      <Impact />
+      <Hero />
+      <ImpactStats />
       <HowItWorks />
-      <Partners />
+      <Roles />
+      <About />
       <Testimonials />
+      <CtaBand />
       <Contact />
     </main>
     <Footer />

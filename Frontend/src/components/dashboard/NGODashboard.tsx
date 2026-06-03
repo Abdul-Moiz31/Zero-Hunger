@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNGOContext } from "@/contexts/ngoContext";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import {
   Users,
   Package2,
@@ -15,6 +16,7 @@ import {
   Bell, 
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
+import { StatCard, NotificationBell, StatusBadge } from "../ui";
 
 // Use interfaces from the NGO context
 interface Volunteer {
@@ -82,7 +84,6 @@ const NGODashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
-  const [showNotifications, setShowNotifications] = useState(false); // State to toggle dropdown
 
   const {
     getNGOStats,
@@ -137,6 +138,16 @@ const NGODashboard = () => {
     }, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Real-time: refresh + toast when a notification arrives.
+  const onRealtime = useCallback(
+    (n: { message: string }) => {
+      getNotifications();
+      toast.success(n.message, { duration: 4000, position: "top-right" });
+    },
+    [getNotifications]
+  );
+  useRealtimeNotifications(onRealtime);
 
   useEffect(() => {
     const activities: Activity[] = [];
@@ -946,28 +957,10 @@ const NGODashboard = () => {
 
   const Dashboard = () => (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <DashboardCard
-          icon={Users}
-          title="Total Volunteers"
-          stats={String(stats.totalVolunteers || 0)}
-          trend="+3 from last week"
-          trendUp={true}
-        />
-        <DashboardCard
-          icon={Package2}
-          title="Total Donations"
-          stats={String(stats.total_donations || 0)}
-          trend="+5 this month"
-          trendUp={true}
-        />
-        <DashboardCard
-          icon={DollarSign}
-          title="Pending Donations"
-          stats={String(stats.pendingDonations || 0)}
-          trend="+2 this month"
-          trendUp={true}
-        />
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3 mb-8">
+        <StatCard label="Total volunteers" value={stats.totalVolunteers || 0} icon={Users} accent="violet" index={0} />
+        <StatCard label="Total donations" value={stats.total_donations || 0} icon={Package2} accent="green" index={1} />
+        <StatCard label="Pending donations" value={stats.pendingDonations || 0} icon={DollarSign} accent="amber" index={2} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1043,65 +1036,10 @@ const NGODashboard = () => {
               onClick={() => setActiveTab("claimedFoods")}
             />
           </div>
-          {/* Bell Icon with Notifications Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 rounded-full hover:bg-gray-100 focus:outline-none"
-            >
-              <Bell className="w-6 h-6 text-gray-600" />
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
-                <div className="flex justify-between items-center p-4 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
-                  <button
-                    onClick={() => setShowNotifications(false)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="p-4 space-y-3">
-                  {notifications.length > 0 ? (
-                    notifications.map((notification) => (
-                      <div
-                        key={notification._id}
-                        className={`p-3 rounded-lg ${
-                          notification.read ? "bg-gray-50" : "bg-blue-50"
-                        } flex justify-between items-start`}
-                      >
-                        <div>
-                          <p className="text-sm text-gray-800">{notification.message}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {new Date(notification.createdAt).toLocaleString()}
-                          </p>
-                        </div>
-                       {!notification.read && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMarkAsRead(notification._id);
-                            }}
-                            className="ml-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
-                            Mark as Read
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-center text-gray-500 py-4">No notifications available.</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+          <NotificationBell
+            notifications={notifications}
+            onMarkRead={(id) => handleMarkAsRead(id)}
+          />
         </div>
       </div>
       {activeTab === "dashboard" ? (
