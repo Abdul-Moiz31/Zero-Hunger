@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Lock, ArrowLeft } from 'lucide-react';
+import api from '@/utils/axios';
 
 const ResetPassword = () => {
   const [newPassword, setNewPassword] = useState('');
@@ -34,25 +35,13 @@ const ResetPassword = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/reset-password/${token}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: newPassword }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
-      }
-
+      await api.post(`/auth/reset-password/${token}`, { password: newPassword });
       setIsSubmitted(true);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message === 'Invalid or expired token' ? 'This reset link is invalid or has expired.' : err.message);
-      } else {
-        setError('An unknown error occurred.');
-      }
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Something went wrong. Please try again.';
+      setError(message === 'Invalid or expired reset token' ? 'This reset link is invalid or has expired.' : message);
     } finally {
       setLoading(false);
     }

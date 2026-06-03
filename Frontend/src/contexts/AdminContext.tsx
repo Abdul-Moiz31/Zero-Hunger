@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, useState } from "react";
-import axios from "axios";
-import {toast } from "react-toastify";
+import api from "@/utils/axios";
+import { toast } from "react-toastify";
 
 // Define types for better type safety
 interface Stats {
@@ -44,18 +44,6 @@ interface AdminContextType {
   saveSettings: (settings: any) => Promise<void>;
 }
 
-// Axios interceptor to include token
-axios.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export function useAdminContext() {
@@ -79,7 +67,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   async function getDashboardStats() {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/dashboard-stats`);
+      const response = await api.get(`/admin/dashboard-stats`);
       const { users, donorCount, ngoCount, volunteerCount, donationCount } = response.data;
       setUsers(users);
       setStats({
@@ -97,7 +85,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   async function updateUserStatus(data: { userId: string; status: boolean }) {
     if (!data.status) return; // Only allow approval
     try {
-      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/user-status/update`, {
+      await api.put(`/admin/user-status/update`, {
         userId: data.userId,
         status: true,
       });
@@ -110,7 +98,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   async function deleteUser(userId: string) {
     try {
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/users/${userId}`);
+      await api.delete(`/admin/users/${userId}`);
       toast.warning("Deleted successfully");
       await getDashboardStats(); // Refresh data
     } catch (error: any) {
@@ -121,7 +109,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   async function getFoodDonations() {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/food-donations`);
+      const response = await api.get(`/admin/food-donations`);
       setFoodDonations(response.data);
     } catch (error: any) {
       console.error("getFoodDonations error:", error.response?.data || error.message);
@@ -131,7 +119,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   async function deleteFoodDonation(donationId: string) {
     try {
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/food-donations/${donationId}`);
+      await api.delete(`/admin/food-donations/${donationId}`);
       toast.warning("Deleted successfully");
       await getFoodDonations(); // Refresh data
     } catch (error: any) {
@@ -143,7 +131,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   async function saveSettings(settings: any) {
     try {
       // Placeholder: Add backend API endpoint to save settings
-      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/admin/settings`, settings);
+      await api.put(`/admin/settings`, settings);
     } catch (error: any) {
       console.error("saveSettings error:", error.response?.data || error.message);
       throw new Error(error.response?.data?.message || "Failed to save settings");

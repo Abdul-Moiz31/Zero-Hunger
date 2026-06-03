@@ -3,8 +3,7 @@ import { Mail, Lock, User, Phone, Building, Eye, EyeOff } from 'lucide-react';
 import { UserRole, User as AuthUser } from '../../types/auth';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast, ToastContainer } from 'react-toastify';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import api from '@/utils/axios';
 
 interface SignUpFormProps {
   onSuccess?: (user: AuthUser) => void;
@@ -71,21 +70,15 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSuccess }) => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Sign-up failed');
-      }
+      await api.post('/auth/register', formData);
       setSuccess('Your request has been sent for approval. You will receive an email once approved.');
       setError('');
       setIsLoading(false);
       return;
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      const errorMessage =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        (err instanceof Error ? err.message : 'Sign-up failed');
       setError(errorMessage);
       setSuccess('');
       setIsLoading(false);
