@@ -69,12 +69,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await api.get(`/admin/dashboard-stats`);
       const { users, donorCount, ngoCount, volunteerCount, donationCount } = response.data;
-      setUsers(users);
+      setUsers(Array.isArray(users) ? users : []);
       setStats({
-        ngoCount,
-        donorCount,
-        volunteerCount,
-        donationCount,
+        ngoCount: ngoCount ?? 0,
+        donorCount: donorCount ?? 0,
+        volunteerCount: volunteerCount ?? 0,
+        donationCount: donationCount ?? 0,
       });
     } catch (error: any) {
       console.error("getDashboardStats error:", error.response?.data || error.message);
@@ -110,7 +110,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   async function getFoodDonations() {
     try {
       const response = await api.get(`/admin/food-donations`);
-      setFoodDonations(response.data);
+      setFoodDonations(Array.isArray(response.data) ? response.data : []);
     } catch (error: any) {
       console.error("getFoodDonations error:", error.response?.data || error.message);
       throw new Error(error.response?.data?.message || "Failed to fetch food donations");

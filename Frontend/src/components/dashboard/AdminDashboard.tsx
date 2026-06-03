@@ -187,7 +187,7 @@ const AdminDashboard = () => {
 
   // Memoized filtered users with data mapping
   const filteredUsers = useMemo(() => {
-    return allusers
+    return (allusers ?? [])
       .map((user: any) => ({
         ...user,
         joinedDate: user.createdAt, // Map createdAt to joinedDate
@@ -207,8 +207,8 @@ const AdminDashboard = () => {
 
   // Memoized filtered donations
   const filteredDonations = useMemo(() => {
-    return foodDonations.filter((donation: FoodDonation) =>
-      donation.title.toLowerCase().includes(searchTerm.toLowerCase())
+    return (foodDonations ?? []).filter((donation: FoodDonation) =>
+      donation.title?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [foodDonations, searchTerm]);
 
@@ -312,7 +312,7 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {allusers.map((user: any) => (
+                  {(allusers ?? []).map((user: any) => (
                     <tr key={user._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                       <td className="py-3 sm:py-4 px-4">
                         <div className="flex items-center space-x-3">
