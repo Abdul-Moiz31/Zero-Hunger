@@ -22,8 +22,6 @@ const Settings = () => {
       contact_number: user.contact_number || '',
       email: user.email || '',
     });
-    const token = localStorage.getItem('token');
-    console.log('Current token:', token);
   }
 }, [user]);
 
@@ -47,7 +45,6 @@ const Settings = () => {
       updateData.organization_name = formData.organization_name || undefined;
       updateData.contact_number = formData.contact_number || undefined;
     }
-    console.log('Submitting to:', `${import.meta.env.VITE_API_BASE_URL}/auth/update-profile`, 'with data:', updateData);
     await updateProfile(updateData);
     setMessage({ type: 'success', text: 'Profile updated successfully' });
   } catch (error: any) {

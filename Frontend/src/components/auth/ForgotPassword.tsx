@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, ArrowLeft } from 'lucide-react';
+import api from '@/utils/axios';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -15,25 +16,13 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
-      }
-
+      await api.post('/auth/forgot-password', { email });
       setIsSubmitted(true);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message === 'User not found' ? 'No account found with this email.' : err.message);
-      } else {
-        setError('An unknown error occurred.');
-      }
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Something went wrong. Please try again.';
+      setError(message);
     } finally {
       setLoading(false);
     }

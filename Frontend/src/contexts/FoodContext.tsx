@@ -2,6 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState } from 'react';
+import api from '@/utils/axios';
 interface Donor {
   _id: string;
   name: string;
@@ -68,13 +69,7 @@ export const FoodListingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/food/available');
-      
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
+      const { data } = await api.get<FoodListing[]>('/food/available');
       setListings(data);
     } catch (err) {
       console.error('Failed to fetch available listings:', err);
@@ -90,43 +85,21 @@ export const FoodListingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setError(null);
 
     try {
-      // Get auth token from localStorage or wherever you store it
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        throw new Error('Authentication required');
-      }
+      const { data: result } = await api.post('/ngo/claim/food', { foodId });
 
-      const response = await fetch('http://localhost:5000/api/ngo/claim/food', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ foodId })
-      });
-
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to claim food');
-      }
-
-      // Update the local state to reflect the change
+      // Remove the claimed listing from the local list.
       if (result.success) {
-        setListings(prevListings => 
-          prevListings.filter(listing => listing._id !== foodId)
-        );
+        setListings((prev) => prev.filter((listing) => listing._id !== foodId));
       }
 
       return result;
     } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        (err instanceof Error ? err.message : 'Failed to claim food');
       console.error('Error claiming food:', err);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      return { 
-        success: false, 
-        message: err instanceof Error ? err.message : 'Failed to claim food' 
-      };
+      setError(message);
+      return { success: false, message };
     } finally {
       setLoading(false);
     }

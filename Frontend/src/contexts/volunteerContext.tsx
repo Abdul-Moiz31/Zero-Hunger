@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, useState, useCallback, useRef } from "react";
-import axios from "axios";
+import api from "@/utils/axios";
 
 interface VolunteerStats {
   available_Task: number;
@@ -101,13 +101,8 @@ export function VolunteerProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found");
-      
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/volunteer/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
+      const response = await api.get(`/volunteer/stats`);
+
       setStats({
         available_Task: response.data.available_Task || 0,
         in_progress_task: response.data.in_progress_task || 0,
@@ -148,13 +143,8 @@ export function VolunteerProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found");
-      
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/volunteer/tasks`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
+      const response = await api.get(`/volunteer/tasks`);
+
       setVolunteerTasks(response.data || []);
 
       if (!hasInitialData.tasks) {
@@ -189,13 +179,8 @@ export function VolunteerProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found");
-      
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/volunteer/notifications`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
+      const response = await api.get(`/volunteer/notifications`);
+
       setNotifications(response.data || []);
 
       if (!hasInitialData.notifications) {
@@ -222,22 +207,11 @@ export function VolunteerProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found");
-      
-      // console.log("Updating task:", { taskId, status });
-      const response = await axios.patch(
-        `${import.meta.env.VITE_API_BASE_URL}/volunteer/tasks/${taskId}/status`,
-        { status },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      // console.log("Update Status Response:", response.data);
-      
+      await api.patch(`/volunteer/tasks/${taskId}/status`, { status });
+
       // Refresh tasks silently after update
       await getVolunteerTasks(true);
       await getVolunteerStats(true);
-      
     } catch (error: any) {
       console.error("Error updating task status:", error);
       throw new Error(error.response?.data?.message || "Failed to update task status");
@@ -249,15 +223,8 @@ export function VolunteerProvider({ children }: { children: React.ReactNode }) {
 
   const markNotificationAsRead = useCallback(async (notificationId: string) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found");
-      
-      await axios.patch(
-        `${import.meta.env.VITE_API_BASE_URL}/volunteer/notifications/${notificationId}/read`, 
-        {}, 
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
+      await api.patch(`/volunteer/notifications/${notificationId}/read`);
+
       // Update local state immediately for better UX
       setNotifications((prev) =>
         prev.map((n) => (n._id === notificationId ? { ...n, read: true } : n))
