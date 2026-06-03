@@ -6,9 +6,9 @@
     "node": ">=18 <=22"
   },
   "scripts": {
-    "start": "node dist/server.js",
+    "start": "node api.js && node dist/server.js",
     "build": "tsc",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts ",
+    "dev": "node api.js && ts-node-dev --respawn --transpile-only src/server.ts ",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --ext .ts,.js,.jsx,.tsx",
