@@ -20,6 +20,10 @@ import ngoRoutes from './routes/ngoRoutes';
 import VolunteerRoutes from './routes/volunteerRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import adminRoutes from './routes/adminRoutes';
+import impactRoutes from './routes/impactRoutes';
+import scheduleRoutes from './routes/scheduleRoutes';
+import profileRoutes from './routes/profileRoutes';
+import messageRoutes from './routes/messageRoutes';
 
 export const app = express();
 
@@ -73,6 +77,10 @@ app.use('/api/donor', donorRoutes);
 app.use('/api/food', foodRoutes);
 app.use('/api/volunteer', VolunteerRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/impact',        impactRoutes);
+app.use('/api/schedules',     scheduleRoutes);
+app.use('/api/profiles',      profileRoutes);
+app.use('/api/messages',      messageRoutes);
 
 // 404 + centralized error handling (must be last).
 app.use(notFoundHandler);
