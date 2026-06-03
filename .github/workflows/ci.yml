@@ -2,47 +2,58 @@ name: CI
 
 on:
   push:
-    branches: [main, moiz1]
+    branches: [main]
   pull_request:
-    branches: [main, moiz1]
 
 jobs:
-  build-and-lint:
+  backend:
+    name: Backend (typecheck · lint · test)
     runs-on: ubuntu-latest
-
-    services:
-      mongo:
-        image: mongo:5.0
-        ports: ['27017:27017']
-        options: --health-cmd="mongosh --eval 'db.adminCommand(\"ping\")'" --health-interval=10s --health-timeout=5s --health-retries=5
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
+          cache: npm
+          cache-dependency-path: Backend/package-lock.json
 
-      # Backend
-      - name: Install Backend dependencies
+      - name: Install
         working-directory: ./Backend
         run: npm ci
 
-      - name: Type Check Backend
+      - name: Type check
         working-directory: ./Backend
         run: npx tsc --noEmit
 
-      # Frontend
-      - name: Install Frontend dependencies
+      - name: Lint
+        working-directory: ./Backend
+        run: npm run lint
+
+      - name: Test
+        working-directory: ./Backend
+        run: npm test
+
+  frontend:
+    name: Frontend (typecheck · build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Install
         working-directory: ./Frontend
         run: npm ci
 
-      - name: Type Check Frontend
+      - name: Type check
         working-directory: ./Frontend
         run: npx tsc --noEmit
 
-      - name: Build Frontend
+      - name: Build
         working-directory: ./Frontend
         run: npm run build
+        env:
+          VITE_API_BASE_URL: https://example.com/api
