@@ -31,3 +31,8 @@ export function disconnectSocket(): void {
   socket?.disconnect();
   socket = null;
 }
+
+/** Volunteer calls this to broadcast their GPS position for an active task. */
+export function emitLocation(taskId: string, ngoId: string, lat: number, lng: number): void {
+  getSocket()?.emit('location:update', { taskId, ngoId, lat, lng });
+}
