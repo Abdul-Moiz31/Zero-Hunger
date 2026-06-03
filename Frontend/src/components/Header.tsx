@@ -9,10 +9,15 @@ const Header = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showWelcomePopup, setShowWelcomePopup] = useState(true);
+  const [showWelcomePopup, setShowWelcomePopup] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Show the welcome popup once per browser session (WelcomePopup handles localStorage)
+  useEffect(() => {
+    setShowWelcomePopup(true);
+  }, []);
 
   const isHomePage = location.pathname === '/';
 
@@ -140,7 +145,7 @@ const Header = () => {
               )}
             </div>
           </div>
-                {showWelcomePopup && <WelcomePopup onClose={() => setShowWelcomePopup(false)} />}
+                {showWelcomePopup && isHomePage && <WelcomePopup onClose={() => setShowWelcomePopup(false)} />}
           {isMenuOpen && (
             <div className="md:hidden mt-4 pb-4 animate-fadeIn">
               <div className="flex flex-col space-y-4">
@@ -185,7 +190,7 @@ const Header = () => {
       </header>
       
       
-      {isHomePage && showWelcomePopup && (
+      {isHomePage && (
         <div className="relative min-h-screen">
           <div className="absolute inset-0">
             <div 
@@ -278,7 +283,6 @@ const Header = () => {
         </div>
       )}
 
-      {/* {isHomePage && showWelcomePopup && <WelcomePopup onClose={() => setShowWelcomePopup(false)} />} */}
     </>
   );
 };
