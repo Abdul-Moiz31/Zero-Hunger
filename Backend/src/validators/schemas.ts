@@ -73,3 +73,9 @@ export const sendNotificationSchema = z.object({
   message: z.string().trim().min(1, 'Message is required'),
   taskId: objectId.optional(),
 });
+
+export const ratingSchema = z.object({
+  foodId: objectId,
+  stars: z.number().int().min(1).max(5),
+  comment: z.string().trim().max(500).optional(),
+});
