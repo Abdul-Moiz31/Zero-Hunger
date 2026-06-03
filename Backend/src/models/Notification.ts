@@ -12,6 +12,7 @@ export const NOTIFICATION_TYPES = [
   'in_progress',
   'completed',
   'delivery_confirmed',
+  'expiry_alert',
   'approved',
   'general',
 ] as const;
