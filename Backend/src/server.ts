@@ -2,11 +2,14 @@ import express from 'express';
 import { createServer } from 'http';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
 
 import { env } from './config/env';
 import connectDB from './config/db';
 import { initSocket } from './config/socket';
 import { notFoundHandler, errorHandler } from './middlewares/errorHandler';
+import { globalLimiter } from './middlewares/security';
 
 import authRoutes from './routes/authRoutes';
 import contactRoutes from './routes/contactRoutes';
@@ -18,6 +21,13 @@ import notificationRoutes from './routes/notificationRoutes';
 import adminRoutes from './routes/adminRoutes';
 
 export const app = express();
+
+// Trust the platform proxy (Render) so client IPs and secure cookies work.
+app.set('trust proxy', 1);
+
+// Security headers. crossOriginResourcePolicy is relaxed so the SPA on another
+// origin can load API responses/images.
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 // CORS — driven by an env allowlist so production origins work without code edits.
 app.use(
@@ -38,6 +48,12 @@ app.use(
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
+
+// Strip MongoDB operators ($, .) from user input to prevent NoSQL injection.
+app.use(mongoSanitize());
+
+// Apply the global rate limiter to all API routes.
+app.use('/api', globalLimiter);
 
 // Health check (used by Render and uptime monitors). Does not require the DB.
 app.get('/health', (_req, res) => {
