@@ -1,4 +1,4 @@
-import { Bell, Package, HandHeart, Truck, CheckCircle2, UserCheck, type LucideIcon } from 'lucide-react';
+import { Bell, Package, HandHeart, Truck, CheckCircle2, UserCheck, ShieldCheck, type LucideIcon } from 'lucide-react';
 
 export interface NotificationMeta {
   icon: LucideIcon;
@@ -24,6 +24,8 @@ export function getNotificationMeta(type?: string): NotificationMeta {
       return { icon: Truck, chip: 'bg-violet-50 text-violet-600', label: 'In progress' };
     case 'completed':
       return { icon: CheckCircle2, chip: 'bg-green-50 text-green-600', label: 'Completed' };
+    case 'delivery_confirmed':
+      return { icon: ShieldCheck, chip: 'bg-emerald-50 text-emerald-600', label: 'Delivery confirmed' };
     case 'approved':
       return { icon: UserCheck, chip: 'bg-green-50 text-green-600', label: 'Approved' };
     default:
