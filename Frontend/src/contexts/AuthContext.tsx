@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-// import type { User } from '@/types/auth';
+import api from '@/utils/axios';
 
 interface User {
   _id: string;
@@ -75,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const fetchOrgs = async () => {
       try {
-        const resp = await axios.get<Org[]>(`${import.meta.env.VITE_API_BASE_URL}/auth/org-names`);
+        const resp = await api.get<Org[]>(`/auth/org-names`);
         setOrgNames(resp.data);
       } catch (err) {
         console.error('Failed to load organization names', err);
@@ -87,15 +86,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string): Promise<AuthResponse> => {
     try {
       setLoading(true);
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, { email, password });
+      const response = await api.post(`/auth/login`, { email, password });
       const { user, token } = response.data;
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('token', token);
-      return response.data; // Return the AuthResponse
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw new Error('Invalid email or password');
+      return response.data;
+    } catch (error: any) {
+      // Surface the server's message (e.g. "pending admin approval") when present.
+      const message = error?.response?.data?.message || 'Invalid email or password';
+      throw new Error(message);
     } finally {
       setLoading(false);
     }
@@ -109,21 +109,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
  const updateProfile = async (data: Partial<User>) => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.error('No token found in localStorage');
-      throw new Error('No token found');
-    }
-    console.log('Sending update profile request with token:', token);
-    const response = await axios.put(
-      `${import.meta.env.VITE_API_BASE_URL}/auth/update-profile`,
-      data,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const response = await api.put(`/auth/update-profile`, data);
     setUser(response.data.user);
     localStorage.setItem('user', JSON.stringify(response.data.user));
   } catch (error: any) {
-    console.error('Update profile failed:', error);
     throw new Error(error.response?.data?.message || 'Failed to update profile');
   }
 };

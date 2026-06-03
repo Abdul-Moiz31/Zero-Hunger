@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import api from "@/utils/axios";
 import { toast } from "react-hot-toast";
 
 export interface Notification {
@@ -72,23 +72,9 @@ export function DonorProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isFetching, setIsFetching] = useState(false);
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("Authentication token not found");
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      withCredentials: true,
-    };
-  };
-
   const getDonorStats = useCallback(async () => {
     try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/donor/stats`,
-        getAuthHeaders()
-      );
+      const response = await api.get(`/donor/stats`);
       const { totalDonations, pendingDonations, completedDonations } = response.data;
       setStats({ totalDonations, pendingDonations, completedDonations });
     } catch (error: any) {
@@ -101,10 +87,7 @@ export function DonorProvider({ children }: { children: React.ReactNode }) {
 
   const getMyDonations = useCallback(async () => {
     try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/donor/my-donations`,
-        getAuthHeaders()
-      );
+      const response = await api.get(`/donor/my-donations`);
       setDonations(response.data);
     } catch (error: any) {
       console.error("Failed to fetch donations:", error);
@@ -116,10 +99,7 @@ export function DonorProvider({ children }: { children: React.ReactNode }) {
 
   const deleteDonation = useCallback(async (id: string) => {
     try {
-      await axios.delete(
-        `${import.meta.env.VITE_API_BASE_URL}/donor/donate/${id}`,
-        getAuthHeaders()
-      );
+      await api.delete(`/donor/donate/${id}`);
       await getMyDonations();
       toast.success("Donation deleted successfully");
     } catch (error: any) {
@@ -132,11 +112,7 @@ export function DonorProvider({ children }: { children: React.ReactNode }) {
 
   const updateDonationStatus = useCallback(async (id: string, status: string, ngoId?: string) => {
     try {
-      await axios.put(
-        `${import.meta.env.VITE_API_BASE_URL}/donor/donation/${id}/status`,
-        { status, ngoId },
-        getAuthHeaders()
-      );
+      await api.put(`/donor/donation/${id}/status`, { status, ngoId });
       await getMyDonations();
       toast.success("Donation status updated");
     } catch (error: any) {
@@ -149,17 +125,7 @@ export function DonorProvider({ children }: { children: React.ReactNode }) {
 
   const getNotifications = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token");
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      if (!user._id) {
-        console.error("No user ID found in localStorage");
-        toast.error("User not logged in. Please log in again");
-        return;
-      }
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/donor/Notifications`,
-        getAuthHeaders()
-      );
+      const response = await api.get(`/donor/Notifications`);
       setNotifications(response.data);
     } catch (error: any) {
       console.error("Failed to fetch notifications:", error);
@@ -171,11 +137,7 @@ export function DonorProvider({ children }: { children: React.ReactNode }) {
 
   const markNotificationAsRead = useCallback(async (id: string) => {
     try {
-      await axios.put(
-        `${import.meta.env.VITE_API_BASE_URL}/donor/notifications/${id}/read`,
-        {},
-        getAuthHeaders()
-      );
+      await api.put(`/donor/notifications/${id}/read`);
       setNotifications((prev) =>
         prev.map((notif) => (notif._id === id ? { ...notif, read: true } : notif))
       );
