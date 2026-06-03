@@ -41,6 +41,24 @@ interface Food {
   contact_number: string;
 }
 
+export interface InventoryDelivery {
+  _id: string;
+  title: string;
+  quantity: number;
+  unit: string;
+  dietary_info?: string;
+  delivered_time?: string;
+  donorId?: { name: string };
+  volunteerId?: { name: string };
+}
+
+export interface InventoryData {
+  totalMeals: number;
+  totalDeliveries: number;
+  categories: { name: string; count: number }[];
+  deliveries: InventoryDelivery[];
+}
+
 interface NGOContextType {
   stats: NGOStats;
   volunteers: Volunteer[];
@@ -56,6 +74,7 @@ interface NGOContextType {
   updateFoodStatus: (foodId: string, status: string) => Promise<void>;
   deleteClaimedFood: (foodId: string) => Promise<void>;
   confirmDelivery: (foodId: string) => Promise<void>;
+  getInventory: (days?: number) => Promise<InventoryData>;
   getNotifications: () => Promise<void>;
   markNotificationAsRead: (notificationId: string) => Promise<void>;
 }
@@ -195,6 +214,11 @@ export function NGOProvider({ children }: { children: React.ReactNode }) {
     await getClaimedFoods();
   };
 
+  const getInventory = async (days = 30): Promise<InventoryData> => {
+    const { data } = await api.get(`/ngo/inventory?days=${days}`);
+    return data;
+  };
+
   return (
     <NGOContext.Provider
       value={{
@@ -212,6 +236,7 @@ export function NGOProvider({ children }: { children: React.ReactNode }) {
         updateFoodStatus,
         deleteClaimedFood,
         confirmDelivery,
+        getInventory,
         getNotifications,
         markNotificationAsRead,
       }}
