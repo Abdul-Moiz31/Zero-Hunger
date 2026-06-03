@@ -33,6 +33,7 @@ const VolunteerDashboard = () => {
   const [hasFetched, setHasFetched] = useState(false);
   const [sharingTaskId, setSharingTaskId] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
+  const [ratingsData, setRatingsData] = useState<{ ratings: any[]; avg: number; count: number } | null>(null);
 
   const {
     stats,
@@ -45,6 +46,7 @@ const VolunteerDashboard = () => {
     updateTaskStatus,
     getNotifications,
     markNotificationAsRead,
+    getMyRatings,
   } = useVolunteerContext();
 
   const fetchData = useCallback(async () => {
@@ -137,11 +139,15 @@ const VolunteerDashboard = () => {
     };
   }, []);
 
+  // Load ratings when switching to the My Impact tab
+  useEffect(() => {
+    if (activeTab === 'contributions' && !ratingsData) {
+      getMyRatings().then(setRatingsData).catch(() => {});
+    }
+  }, [activeTab, ratingsData, getMyRatings]);
+
   const completedTasks = volunteerTasks.filter((t) => t.status === 'completed');
-  const averageRating =
-    completedTasks.length > 0
-      ? completedTasks.reduce((s, t) => s + (t.feedback?.rating || 0), 0) / completedTasks.length
-      : 0;
+  const averageRating = ratingsData?.avg ?? 0;
 
   const taskColumns: Column<Task>[] = [
     { key: 'title', header: 'Task', render: (t) => <span className="font-medium text-gray-900">{t.title || 'N/A'}</span> },
@@ -259,16 +265,16 @@ const VolunteerDashboard = () => {
             <StatCard label="Hours given" value={completedTasks.length * 2} icon={Route} accent="violet" index={3} />
           </div>
           <div>
-            <h2 className="mb-3 text-lg font-semibold text-gray-900">Completed deliveries</h2>
-            {completedTasks.length > 0 ? (
+            <h2 className="mb-3 text-lg font-semibold text-gray-900">Ratings received</h2>
+            {ratingsData && ratingsData.ratings.length > 0 ? (
               <div className="space-y-4">
-                {completedTasks.map((task) => (
-                  <FeedbackCard key={task._id} task={task} />
+                {ratingsData.ratings.map((r: any) => (
+                  <RatingCard key={r._id} rating={r} />
                 ))}
               </div>
             ) : (
               <p className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 py-10 text-center text-sm text-gray-500">
-                No completed deliveries yet — your impact story starts with your first rescue.
+                No ratings yet — complete your first delivery and an NGO can rate you here.
               </p>
             )}
           </div>
@@ -365,38 +371,29 @@ const StatusModal = ({
   );
 };
 
-const FeedbackCard = ({ task }: { task: Task }) => (
+const RatingCard = ({ rating }: { rating: any }) => (
   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
     <div className="flex justify-between gap-4">
       <div className="flex-1">
-        <h3 className="mb-1 font-semibold text-gray-900">{task.title || 'N/A'}</h3>
-        <div className="space-y-0.5 text-sm text-gray-600">
-          <p>
-            <span className="font-medium">Donor:</span> {task.donorId?.name || 'N/A'}
-          </p>
-          <p>
-            <span className="font-medium">NGO:</span> {task.ngoId?.organization_name || 'N/A'}
-          </p>
-        </div>
+        <h3 className="mb-1 font-semibold text-gray-900">{rating.foodId?.title || 'Delivery'}</h3>
+        <p className="text-sm text-gray-600">
+          <span className="font-medium">NGO:</span> {rating.ngoId?.organization_name || 'N/A'}
+        </p>
+        {rating.comment && (
+          <p className="mt-1 text-sm italic text-gray-500">"{rating.comment}"</p>
+        )}
       </div>
       <div className="flex items-start">
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`h-4 w-4 ${
-              i < Math.floor((task.feedback?.rating || 0) + 0.5)
-                ? 'fill-current text-amber-400'
-                : 'text-gray-300'
-            }`}
+            className={`h-4 w-4 ${i < rating.stars ? 'fill-current text-amber-400' : 'text-gray-300'}`}
           />
         ))}
       </div>
     </div>
-    <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
-      <span>{new Date(task.pickup_window_start).toLocaleDateString()}</span>
-      <span>
-        {fmtTime(task.pickup_window_start)} – {fmtTime(task.pickup_window_end)}
-      </span>
+    <div className="mt-3 border-t border-gray-100 pt-3 text-xs text-gray-400">
+      {new Date(rating.createdAt).toLocaleDateString()}
     </div>
   </div>
 );
