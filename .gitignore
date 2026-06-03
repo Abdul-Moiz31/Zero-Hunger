@@ -26,7 +26,6 @@ dist-ssr
 
 # Node.js
 node_modules/
-.env
 dist/
 coverage/
 .nyc_output/
@@ -58,3 +57,11 @@ Backend/.env
 .env.*.local
 *.swp
 
+# Internal planning/working docs — never publish (repo is public)
+.project-notes/
+PROJECT_MEMORY.md
+AUDIT_REPORT.md
+IMPLEMENTATION_PLAN.md
+CHANGELOG.md
+
+.env

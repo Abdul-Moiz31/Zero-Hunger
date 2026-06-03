@@ -68,9 +68,10 @@ const Listings = () => {
       setClaimResult(result);
       
       if (result.success) {
-        // Show success message briefly before redirecting
+        // Show success message briefly before redirecting to the NGO's
+        // dashboard, where claimed foods are listed.
         setTimeout(() => {
-          navigate('/my-claims');
+          navigate('/ngo-dashboard');
         }, 2000);
       }
     } catch (error) {
@@ -86,7 +87,7 @@ const Listings = () => {
 
   const handleLoginRedirect = () => {
     setPopupVisible(false);
-    navigate('/login');
+    navigate('/auth');
   };
 
   // Format donor name for display
