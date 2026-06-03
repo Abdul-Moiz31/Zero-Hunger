@@ -1,18 +1,78 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { 
-  Heart, 
-  LayoutDashboard, 
-  Package2, 
-  Users, 
-  Settings as SettingsIcon, 
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Heart,
+  LayoutDashboard,
+  Package2,
+  Users,
+  Settings as SettingsIcon,
   LogOut,
-  Search,
-  ChevronDown,
-  X
+  ChevronLeft,
+  X,
+  Menu,
+  Star,
+  MessageSquare,
+  User,
+  ShieldCheck,
+  BarChart3,
+  CalendarClock,
+  Sliders,
 } from 'lucide-react';
+
+const Settings = lazy(() => import('./Settings'));
+const RecurringDonations = lazy(() => import('./RecurringDonations'));
+const NGOPreferences = lazy(() => import('./NGOPreferences'));
+const ProfilePage = lazy(() => import('./ProfilePage'));
+const MessagingPanel = lazy(() => import('./MessagingPanel'));
+
+interface NavItem {
+  id: string;
+  icon: React.ElementType;
+  label: string;
+}
+
+const NAV_BY_ROLE: Record<string, NavItem[]> = {
+  donor: [
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'donations', icon: Package2, label: 'My Donations' },
+    { id: 'recurring', icon: CalendarClock, label: 'Schedules' },
+    { id: 'profile', icon: User, label: 'My Profile' },
+    { id: 'messages', icon: MessageSquare, label: 'Messages' },
+    { id: 'settings', icon: SettingsIcon, label: 'Settings' },
+  ],
+  ngo: [
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'volunteers', icon: Users, label: 'Volunteers' },
+    { id: 'inventory', icon: Package2, label: 'Inventory' },
+    { id: 'preferences', icon: Sliders, label: 'Preferences' },
+    { id: 'profile', icon: User, label: 'My Profile' },
+    { id: 'messages', icon: MessageSquare, label: 'Messages' },
+    { id: 'settings', icon: SettingsIcon, label: 'Settings' },
+  ],
+  volunteer: [
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'tasks', icon: Package2, label: 'My Tasks' },
+    { id: 'ratings', icon: Star, label: 'My Ratings' },
+    { id: 'settings', icon: SettingsIcon, label: 'Settings' },
+  ],
+  admin: [
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'users', icon: Users, label: 'All Users' },
+    { id: 'analytics', icon: BarChart3, label: 'Analytics' },
+    { id: 'security', icon: ShieldCheck, label: 'Security' },
+    { id: 'settings', icon: SettingsIcon, label: 'Settings' },
+  ],
+};
+
+const ROLE_BADGE: Record<string, string> = {
+  donor: 'bg-green-100 text-green-700',
+  ngo: 'bg-blue-100 text-blue-700',
+  volunteer: 'bg-amber-100 text-amber-700',
+  admin: 'bg-rose-100 text-rose-700',
+};
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -22,261 +82,240 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [activePage, setActivePage] = useState('dashboard');
-  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [showLogoutPopup, setShowLogoutPopup] = useState(false);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [notifications] = useState([
-    { id: 1, message: "New task available", time: "5 minutes ago" },
-    { id: 2, message: "Task completed successfully", time: "1 hour ago" },
-    { id: 3, message: "New feedback received", time: "2 hours ago" },
-  ]);
+
+  const role = user?.role ?? 'donor';
+  const navItems = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.donor;
+  const badgeCls = ROLE_BADGE[role] ?? ROLE_BADGE.donor;
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate async logout
       await signOut();
+      navigate('/');
+    } catch {
       setIsLoggingOut(false);
-      setShowLogoutPopup(true);
-      setTimeout(() => {
-        setShowLogoutPopup(false);
-        navigate('/');
-      }, 2000);
-    } catch (error) {
-      setIsLoggingOut(false);
-      console.error('Logout failed:', error);
     }
   };
 
-  const renderContent = () => {
-    if (activePage === 'settings') {
-      const Settings = React.lazy(() => import('./Settings'));
+  const handleNav = (id: string) => {
+    setActivePage(id);
+    setMobileOpen(false);
+  };
+
+  const renderMain = () => {
+    const FullPage = (() => {
+      switch (activePage) {
+        case 'settings':   return Settings;
+        case 'recurring':  return RecurringDonations;
+        case 'preferences': return NGOPreferences;
+        case 'profile':    return ProfilePage;
+        case 'messages':   return MessagingPanel;
+        default:           return null;
+      }
+    })();
+
+    if (FullPage) {
       return (
-        <React.Suspense fallback={<div>Loading...</div>}>
-          <Settings />
-        </React.Suspense>
+        <Suspense fallback={<PageLoader />}>
+          <FullPage />
+        </Suspense>
       );
     }
     return children;
   };
 
   return (
-    
-    <div className="min-h-screen flex bg-gray-50">
-      <div 
-        className={`fixed inset-0 bg-black/50 z-30 transition-opacity md:hidden ${
-          isMobileSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`} 
-        onClick={() => setMobileSidebarOpen(false)}
-      />
-      <div className={`fixed md:static inset-y-0 left-0 w-64 md:w-64 bg-white shadow-lg transition-all duration-300 z-40
-          ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-          ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'}`}
+    <div className="flex min-h-screen bg-[#F8FAFC]">
+      {/* Mobile backdrop */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col bg-white shadow-[1px_0_0_0_#f1f5f9] transition-all duration-300
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${collapsed ? 'md:w-[72px]' : 'w-[260px]'}`}
       >
-         <div className="h-full flex flex-col">
-          <div className="p-4 border-b flex items-center justify-between">
-            <div 
-              onClick={() => navigate('/')} 
-              className="flex items-center space-x-2 cursor-pointer group"
-            >
-              <div className="bg-green-100 rounded-lg p-2 transition-transform group-hover:scale-110">
-                <Heart className="w-6 h-6 text-green-600" />
-              </div>
-              {!isSidebarCollapsed && (
-                <span className="text-xl font-bold text-gray-800">Zero Hunger</span>
-              )}
+        {/* Logo row */}
+        <div className={`flex h-16 items-center border-b border-gray-100 px-4 ${collapsed ? 'justify-center' : 'justify-between'}`}>
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2.5 rounded-lg p-1 transition hover:opacity-80"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-green-600">
+              <Heart className="h-4 w-4 text-white" />
             </div>
-            <button className='md:hidden p-2' onClick={() => setMobileSidebarOpen(false)} ><X className="w-6 h-6" /></button>
+            {!collapsed && (
+              <span className="text-[15px] font-bold tracking-tight text-gray-900">Zero Hunger</span>
+            )}
+          </button>
+
+          {/* Close on mobile */}
+          <button onClick={() => setMobileOpen(false)} className="p-1 text-gray-400 hover:text-gray-600 md:hidden">
+            <X className="h-5 w-5" />
+          </button>
+
+          {/* Collapse toggle on desktop */}
+          {!collapsed && (
+            <button
+              onClick={() => setCollapsed(true)}
+              className="hidden rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 md:block"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          <div className="space-y-0.5">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activePage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNav(item.id)}
+                  title={collapsed ? item.label : undefined}
+                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150
+                    ${isActive
+                      ? 'bg-green-50 text-green-700'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    }
+                    ${collapsed ? 'justify-center' : ''}`}
+                >
+                  <Icon className={`h-[18px] w-[18px] shrink-0 transition-colors ${isActive ? 'text-green-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                  {!collapsed && (
+                    <span className="truncate">{item.label}</span>
+                  )}
+                  {!collapsed && isActive && (
+                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-green-500" />
+                  )}
+                </button>
+              );
+            })}
           </div>
-          
-          {isMobileSidebarOpen && (
-            <div className="flex flex-col items-center py-4 border-b">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-2">
-                <span className="text-2xl font-semibold text-green-600">{user?.name?.charAt(0) || 'U'}</span>
+        </nav>
+
+        {/* User profile + logout */}
+        <div className="border-t border-gray-100 p-3">
+          {!collapsed ? (
+            <div className="flex items-center gap-3 rounded-xl p-2">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm font-bold text-white">
+                {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
               </div>
-              <span className="font-semibold text-gray-800">{user?.name || 'User'}</span>
-              <span className="text-sm text-gray-500">{user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest'}</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-gray-900">{user?.name ?? 'User'}</p>
+                <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${badgeCls}`}>
+                  {role}
+                </span>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Sign out"
+                className="rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-600 text-sm font-bold text-white">
+                {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Sign out"
+                className="rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
           )}
-          
-          <nav className="flex-1 p-4 space-y-2">
-            <SidebarButton
-              icon={LayoutDashboard}
-              label="Dashboard"
-              isActive={activePage === 'dashboard'}
-              onClick={() => {
-                setActivePage('dashboard');
-                setMobileSidebarOpen(false);
-              }}
-              collapsed={isSidebarCollapsed}
-            />
-            
-            {user?.role === 'donor' && (
-              <SidebarButton
-                icon={Package2}
-                label="My Donations"
-                isActive={activePage === 'donations'}
-                onClick={() => {
-                  setActivePage('donations');
-                  setMobileSidebarOpen(false);
-                }}
-                collapsed={isSidebarCollapsed}
-              />
-            )}
-            
-            {user?.role === 'ngo' && (
-              <SidebarButton
-                icon={Users}
-                label="Manage Volunteers"
-                isActive={activePage === 'volunteers'}
-                onClick={() => {
-                  setActivePage('volunteers');
-                  setMobileSidebarOpen(false);
-                }}
-                collapsed={isSidebarCollapsed}
-              />
-            )}
-            
-            <SidebarButton
-              icon={SettingsIcon}
-              label="Settings"
-              isActive={activePage === 'settings'}
-              onClick={() => {
-                setActivePage('settings');
-                setMobileSidebarOpen(false);
-              }}
-              collapsed={isSidebarCollapsed}
-            />
-          </nav>
+
+          {/* Re-expand button when collapsed */}
+          {collapsed && (
+            <button
+              onClick={() => setCollapsed(false)}
+              className="mt-2 flex w-full items-center justify-center rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+              title="Expand sidebar"
+            >
+              <ChevronLeft className="h-4 w-4 rotate-180" />
+            </button>
+          )}
         </div>
-      </div>
+      </aside>
 
-     <div className="flex-1 flex flex-col">
-        <header className="bg-white shadow-sm z-10">
-          <div className="flex justify-between items-center px-4 sm:px-6 py-4">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => {
-                  setMobileSidebarOpen(true);
-                  setSidebarCollapsed(false);
-                }}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors md:hidden"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setSidebarCollapsed(!isSidebarCollapsed)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors hidden md:block"
-              >
-                <ChevronDown 
-                  className={`w-5 h-5 transform transition-transform ${
-                    isSidebarCollapsed ? 'rotate-90' : '-rotate-90'
-                  }`} 
-                />
-              </button>
-              <div className="relative hidden sm:block">
-                <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-40 sm:w-64"
-                />
-              </div>
-            </div>
+      {/* Main area */}
+      <div className={`flex min-w-0 flex-1 flex-col transition-all duration-300 ${collapsed ? 'md:ml-[72px]' : 'md:ml-[260px]'}`}>
+        {/* Top bar */}
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-gray-100 bg-white/80 px-4 backdrop-blur-sm sm:px-6">
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 md:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
 
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <div className="relative">
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  
-                >
-                  {/* <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span> */}
-                </button>
+          {/* Page title */}
+          <div className="flex-1">
+            <h1 className="text-base font-semibold capitalize text-gray-900">
+              {navItems.find((n) => n.id === activePage)?.label ?? 'Dashboard'}
+            </h1>
+          </div>
 
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-64 sm:w-80 bg-white rounded-lg shadow-lg border border-gray-100 py-2 animate-fadeIn">
-                    {notifications.map(notification => (
-                      <div key={notification.id} className="px-4 py-3 hover:bg-gray-50 cursor-pointer">
-                        <p className="text-sm text-gray-800">{notification.message}</p>
-                        <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="relative">
-                <button onClick={() => setShowProfileDropdown((v) => !v)} aria-label="Open profile menu" className="w-8 sm:w-10 h-8 sm:h-10 rounded-full bg-green-100 flex items-center justify-center focus:outline-none">
-                  <span className="text-base sm:text-lg font-semibold text-green-600">{user?.name?.charAt(0) || 'U'}</span>
-                </button>
-                {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50 animate-fadeIn">
-                    <div className="px-4 py-2 border-b">
-                      <p className="font-semibold text-gray-800">{user?.name || 'User'}</p>
-                      <p className="text-sm text-gray-500">{user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest'}</p>
-                    </div>
-                    <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50">Logout</button>
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* Right actions */}
+          <div className="flex items-center gap-2">
+            <span className={`hidden rounded-full px-3 py-1 text-xs font-semibold capitalize sm:inline-block ${badgeCls}`}>
+              {role}
+            </span>
+            <div className="h-8 w-px bg-gray-200" />
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto bg-gray-50">
-          <div className="container mx-auto px-4 sm:px-6 py-6">
-            {renderContent()}
-          </div>
+        {/* Page content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          {renderMain()}
         </main>
       </div>
 
-      {/* Logout Popup */}
-      {showLogoutPopup && (
-        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fadeIn">
-          Successfully logged out!
-        </div>
-      )}
-
-      {/* Loading Overlay */}
+      {/* Full-screen logout loader */}
       {isLoggingOut && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 rounded-2xl bg-white p-8 shadow-2xl">
+            <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-green-100 border-t-green-600" />
+            <p className="text-sm font-medium text-gray-600">Signing out…</p>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-const SidebarButton = ({ 
-  icon: Icon, 
-  label, 
-  isActive, 
-  onClick,
-  collapsed 
-}: { 
-  icon: any;
-  label: string;
-  isActive: boolean;
-  onClick: () => void;
-  collapsed: boolean;
-}) => (
-  <button
-    onClick={onClick}
-    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-      isActive 
-        ? 'bg-green-50 text-green-600' 
-        : 'text-gray-600 hover:bg-gray-50'
-    }`}
-  >
-    <Icon className={`w-5 h-5 ${collapsed ? 'mx-auto' : ''}`} />
-    {!collapsed && <span>{label}</span>}
-  </button>
+const PageLoader = () => (
+  <div className="flex min-h-[40vh] items-center justify-center">
+    <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-green-100 border-t-green-600" />
+  </div>
 );
 
 export default DashboardLayout;
