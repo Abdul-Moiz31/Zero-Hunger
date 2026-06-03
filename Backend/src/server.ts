@@ -106,6 +106,10 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-start();
+// Only auto-start when run as the entrypoint; tests import `app` directly and
+// manage their own database/lifecycle.
+if (require.main === module) {
+  start();
+}
 
 export default app;
