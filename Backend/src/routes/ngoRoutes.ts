@@ -11,6 +11,7 @@ import {
   updateFoodStatus,
   deleteClaimedFood,
   confirmDelivery,
+  getNgoInventory,
   getNgoNotifications,
   markNgoNotificationRead,
 } from '../controllers/ngoController';
@@ -37,6 +38,7 @@ router.post('/volunteers', ngoOnly, validateBody(volunteerSchema), addVolunteer)
 router.patch('/food/:id/status', ngoOnly, validateBody(updateFoodStatusSchema), updateFoodStatus);
 router.delete('/claimed-food/:id', ngoOnly, deleteClaimedFood);
 router.patch('/food/:id/confirm-delivery', ngoOnly, confirmDelivery);
+router.get('/inventory', ngoOnly, getNgoInventory);
 router.get('/notifications', ngoOnly, getNgoNotifications);
 router.patch('/notifications/:notificationId/read', ngoOnly, markNgoNotificationRead);
 
