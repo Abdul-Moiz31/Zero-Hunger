@@ -40,7 +40,7 @@ interface VolunteerContextType {
   error: string | null;
   getVolunteerStats: (silent?: boolean) => Promise<void>;
   getVolunteerTasks: (silent?: boolean) => Promise<void>;
-  updateTaskStatus: (taskId: string, status: Task["status"]) => Promise<void>;
+  updateTaskStatus: (taskId: string, status: Task["status"], proofFile?: File) => Promise<void>;
   getNotifications: (silent?: boolean) => Promise<void>;
   markNotificationAsRead: (notificationId: string) => Promise<void>;
 }
@@ -200,16 +200,24 @@ export function VolunteerProvider({ children }: { children: React.ReactNode }) {
     }
   }, [hasInitialData.notifications]);
 
-  const updateTaskStatus = useCallback(async (taskId: string, status: Task["status"]) => {
+  const updateTaskStatus = useCallback(async (taskId: string, status: Task["status"], proofFile?: File) => {
     if (requestInProgress.current.updating) return;
     requestInProgress.current.updating = true;
     setLoading((prev) => ({ ...prev, updating: true }));
     setError(null);
 
     try {
-      await api.patch(`/volunteer/tasks/${taskId}/status`, { status });
+      if (status === 'completed' && proofFile) {
+        const formData = new FormData();
+        formData.append('status', status);
+        formData.append('proof_img', proofFile);
+        await api.patch(`/volunteer/tasks/${taskId}/status`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else {
+        await api.patch(`/volunteer/tasks/${taskId}/status`, { status });
+      }
 
-      // Refresh tasks silently after update
       await getVolunteerTasks(true);
       await getVolunteerStats(true);
     } catch (error: any) {

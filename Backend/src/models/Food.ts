@@ -27,6 +27,9 @@ const foodSchema = new Schema(
     contact_number: String,
     dietary_info: String,
     img: String,
+    delivery_proof_img: String,
+    ngo_confirmed: { type: Boolean, default: false },
+    ngo_confirmed_at: Date,
   },
   { timestamps: true }
 );

@@ -5,6 +5,7 @@ import Notification from '../models/Notification';
 import { asyncHandler } from '../utils/asyncHandler';
 import { AppError } from '../utils/AppError';
 import { emitNotification } from '../utils/notify';
+import uploadImage from '../utils/uploadImage';
 
 export const getVolunteerStats = asyncHandler(async (req: Request, res: Response) => {
   const volunteerId = req.user!.id;
@@ -45,7 +46,15 @@ export const updateTaskStatus = asyncHandler(async (req: Request, res: Response)
 
   const previousStatus = task.status;
   task.status = status;
-  if (status === 'completed') task.delivered_time = new Date();
+
+  if (status === 'completed') {
+    task.delivered_time = new Date();
+    if (req.file) {
+      const proofUrl = await uploadImage(req.file);
+      (task as typeof task & { delivery_proof_img?: string }).delivery_proof_img = proofUrl;
+    }
+  }
+
   await task.save();
 
   if (status === 'in_progress' && previousStatus !== 'in_progress' && task.ngoId) {

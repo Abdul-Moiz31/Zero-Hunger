@@ -213,6 +213,39 @@ export const assignVolunteerToFood = asyncHandler(async (req: Request, res: Resp
   res.status(200).json({ message: 'Volunteer assigned successfully', food });
 });
 
+// NGO confirms a completed delivery (closes the accountability loop)
+export const confirmDelivery = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const ngoId = new mongoose.Types.ObjectId(req.user!.id);
+
+  const food = await Food.findOne({ _id: id, ngoId, status: 'completed' });
+  if (!food) throw new AppError('Completed donation not found for your NGO', 404);
+
+  (food as typeof food & { ngo_confirmed?: boolean; ngo_confirmed_at?: Date }).ngo_confirmed = true;
+  (food as typeof food & { ngo_confirmed?: boolean; ngo_confirmed_at?: Date }).ngo_confirmed_at = new Date();
+  await food.save();
+
+  // Notify donor that the delivery has been verified
+  await emitNotification({
+    recipientId: food.donorId,
+    message: `Your donation "${food.title}" delivery has been confirmed by the NGO.`,
+    taskId: food._id,
+    type: 'delivery_confirmed',
+  });
+
+  // Notify volunteer
+  if (food.volunteerId) {
+    await emitNotification({
+      recipientId: food.volunteerId,
+      message: `Your delivery of "${food.title}" has been confirmed. Great work!`,
+      taskId: food._id,
+      type: 'delivery_confirmed',
+    });
+  }
+
+  res.status(200).json({ message: 'Delivery confirmed', food });
+});
+
 // NGO notifications
 export const getNgoNotifications = asyncHandler(async (req: Request, res: Response) => {
   const notifications = await Notification.find({ recipientId: req.user!.id })
