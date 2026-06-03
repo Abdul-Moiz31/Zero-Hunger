@@ -15,6 +15,7 @@ Trash2,
 import { useAdminContext } from "@/contexts/AdminContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { StatCard } from "../ui";
 
 // Interfaces aligned with backend data
 interface User {
@@ -269,39 +270,11 @@ const AdminDashboard = () => {
 
   const Overview = () => (
     <div className="space-y-6 px-4 sm:px-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <DashboardCard
-          icon={Building2}
-          title="Total NGOs"
-          value={String(stats.ngoCount)}
-          trend="+5 this month"
-          trendUp={true}
-          color="blue"
-        />
-        <DashboardCard
-          icon={Users}
-          title="Active Donors"
-          value={String(stats.donorCount)}
-          trend="+12 this week"
-          trendUp={true}
-          color="green"
-        />
-        <DashboardCard
-          icon={UserCheck}
-          title="Volunteers"
-          value={String(stats.volunteerCount)}
-          trend="+3% growth"
-          trendUp={true}
-          color="purple"
-        />
-        <DashboardCard
-          icon={Utensils}
-          title="Total Donations"
-          value={String(stats.donationCount)}
-          trend="+10 this month"
-          trendUp={true}
-          color="red"
-        />
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Total NGOs" value={stats.ngoCount} icon={Building2} accent="blue" index={0} />
+        <StatCard label="Active donors" value={stats.donorCount} icon={Users} accent="green" index={1} />
+        <StatCard label="Volunteers" value={stats.volunteerCount} icon={UserCheck} accent="violet" index={2} />
+        <StatCard label="Total donations" value={stats.donationCount} icon={Utensils} accent="rose" index={3} />
       </div>
       <div className="bg-white rounded-xl shadow-sm table-container">
         <div className="p-4 sm:p-6">
