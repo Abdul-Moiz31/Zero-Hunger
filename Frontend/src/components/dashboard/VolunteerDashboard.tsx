@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useVolunteerContext } from '@/contexts/volunteerContext';
-import { Package2, Route, CheckCircle, Star, X, Upload, Camera } from 'lucide-react';
+import { Package2, Route, CheckCircle, Star, X, Upload, Camera, MapPin, Navigation } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { StatCard, StatusBadge, DataTable, NotificationBell, Button, type Column } from '../ui';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
+import { emitLocation } from '@/utils/socket';
 
 interface Task {
   _id: string;
@@ -16,7 +17,7 @@ interface Task {
   status: 'available' | 'assigned' | 'in_progress' | 'completed';
   pickup_window_start: string;
   pickup_window_end: string;
-  ngoId: { organization_name: string };
+  ngoId: { organization_name: string; _id: string };
   contact_number: number;
   donorId: { name: string; email: string };
   feedback?: { rating: number; feedback: string };
@@ -30,6 +31,8 @@ const VolunteerDashboard = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
+  const [sharingTaskId, setSharingTaskId] = useState<string | null>(null);
+  const watchIdRef = useRef<number | null>(null);
 
   const {
     stats,
@@ -99,6 +102,41 @@ const VolunteerDashboard = () => {
     }
   };
 
+  const toggleLocationSharing = (task: Task) => {
+    if (sharingTaskId === task._id) {
+      // Stop sharing
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+      setSharingTaskId(null);
+      toast('Location sharing stopped', { icon: '📍' });
+    } else {
+      if (!navigator.geolocation) {
+        toast.error('Geolocation is not supported by your browser');
+        return;
+      }
+      // Stop previous watch if any
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+
+      const ngoId = task.ngoId?._id;
+      if (!ngoId) { toast.error('NGO info missing on this task'); return; }
+
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => emitLocation(task._id, ngoId, pos.coords.latitude, pos.coords.longitude),
+        () => toast.error('Could not get location'),
+        { enableHighAccuracy: true, maximumAge: 10000 }
+      );
+      setSharingTaskId(task._id);
+      toast.success('Sharing live location with NGO', { duration: 3000 });
+    }
+  };
+
+  // Clean up geolocation watch on unmount
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+    };
+  }, []);
+
   const completedTasks = volunteerTasks.filter((t) => t.status === 'completed');
   const averageRating =
     completedTasks.length > 0
@@ -123,16 +161,31 @@ const VolunteerDashboard = () => {
         t.status === 'completed' ? (
           <span className="text-xs text-gray-400">Done</span>
         ) : (
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              setSelectedTask(t);
-              setShowStatusModal(true);
-            }}
-          >
-            Update
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setSelectedTask(t);
+                setShowStatusModal(true);
+              }}
+            >
+              Update
+            </Button>
+            {t.status === 'in_progress' && (
+              <button
+                onClick={() => toggleLocationSharing(t)}
+                title={sharingTaskId === t._id ? 'Stop sharing location' : 'Share live location'}
+                className={`rounded-lg p-1.5 transition ${
+                  sharingTaskId === t._id
+                    ? 'bg-green-100 text-green-700 animate-pulse'
+                    : 'bg-gray-100 text-gray-500 hover:bg-green-50 hover:text-green-600'
+                }`}
+              >
+                <Navigation className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         ),
     },
   ];

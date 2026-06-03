@@ -38,6 +38,19 @@ export function initSocket(server: HttpServer): IOServer {
     const userId = socket.data.userId as string;
     if (userId) socket.join(userId);
 
+    // Volunteer broadcasts their GPS position for an active task.
+    // Server relays it to the NGO that owns the task.
+    socket.on('location:update', async (payload: { taskId: string; ngoId: string; lat: number; lng: number }) => {
+      if (!payload?.taskId || !payload?.ngoId) return;
+      io!.to(String(payload.ngoId)).emit('volunteer:location', {
+        taskId: payload.taskId,
+        volunteerId: userId,
+        lat: payload.lat,
+        lng: payload.lng,
+        timestamp: Date.now(),
+      });
+    });
+
     socket.on('disconnect', () => {
       // rooms are cleaned up automatically
     });

@@ -16,7 +16,11 @@ import {
   Bell,
   ShieldCheck,
   Image,
+  MapPin,
 } from "lucide-react";
+import { lazy, Suspense } from 'react';
+
+const LiveMap = lazy(() => import('./LiveMap'));
 import toast, { Toaster } from "react-hot-toast";
 import { StatCard, NotificationBell, StatusBadge } from "../ui";
 
@@ -1071,7 +1075,7 @@ const NGODashboard = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">NGO Dashboard</h1>
         <div className="flex items-center space-x-4">
-          <div className="flex space-x-4">
+          <div className="flex flex-wrap gap-2">
             <TabButton label="Overview" isActive={activeTab === "dashboard"} onClick={() => setActiveTab("dashboard")} />
             <TabButton
               label="Manage Volunteers"
@@ -1084,6 +1088,7 @@ const NGODashboard = () => {
               isActive={activeTab === "claimedFoods"}
               onClick={() => setActiveTab("claimedFoods")}
             />
+            <TabButton label="Live Map" isActive={activeTab === "liveMap"} onClick={() => setActiveTab("liveMap")} />
           </div>
           <NotificationBell
             notifications={notifications}
@@ -1097,6 +1102,10 @@ const NGODashboard = () => {
         <VolunteersTable />
       ) : activeTab === "donations" ? (
         <DonationsTable />
+      ) : activeTab === "liveMap" ? (
+        <Suspense fallback={<div className="h-80 flex items-center justify-center text-gray-400 text-sm">Loading map…</div>}>
+          <LiveMap claimedFoods={claimedFoods as any} />
+        </Suspense>
       ) : (
         <ClaimedFoodsTable />
       )}
