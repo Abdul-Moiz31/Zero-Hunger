@@ -11,6 +11,7 @@ import { initSocket } from './config/socket';
 import { notFoundHandler, errorHandler } from './middlewares/errorHandler';
 import { globalLimiter } from './middlewares/security';
 
+import { startExpiryAlertJob } from './jobs/expiryAlerts';
 import authRoutes from './routes/authRoutes';
 import contactRoutes from './routes/contactRoutes';
 import foodRoutes from './routes/foodRoutes';
@@ -88,6 +89,7 @@ initSocket(httpServer);
 async function start() {
   try {
     await connectDB();
+    startExpiryAlertJob();
     httpServer.listen(env.PORT, () => {
       console.log(`🚀 Server running on port ${env.PORT} (${env.NODE_ENV}) — realtime enabled`);
     });
