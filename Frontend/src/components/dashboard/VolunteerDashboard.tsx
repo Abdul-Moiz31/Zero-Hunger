@@ -4,6 +4,7 @@ import { useVolunteerContext } from '@/contexts/volunteerContext';
 import { Package2, Route, CheckCircle, Star, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { StatCard, StatusBadge, DataTable, NotificationBell, Button, type Column } from '../ui';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 
 interface Task {
   _id: string;
@@ -55,6 +56,16 @@ const VolunteerDashboard = () => {
   useEffect(() => {
     if (!hasFetched) fetchData();
   }, [fetchData, hasFetched]);
+
+  // Real-time: refresh notifications instantly and toast when one arrives.
+  const onRealtime = useCallback(
+    (n: { message: string }) => {
+      getNotifications(true).catch(() => {});
+      toast.success(n.message, { duration: 4000, position: 'top-right' });
+    },
+    [getNotifications]
+  );
+  useRealtimeNotifications(onRealtime);
 
   // Poll notifications + tasks (silent). Socket.IO supersedes this in prod.
   useEffect(() => {

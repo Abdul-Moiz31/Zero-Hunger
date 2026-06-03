@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import Notification, { NOTIFICATION_TYPES } from '../models/Notification';
+import { emitToUser } from '../config/socket';
 
 type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -24,7 +25,9 @@ export const emitNotification = async ({ recipientId, message, taskId, type = 'g
     read: false,
   });
 
-  // NOTE: real-time push (Socket.IO) is attached here in Phase 5.
+  // Push the notification to the recipient in real time (if they're connected).
+  emitToUser(String(recipientId), 'notification:new', notification);
+
   return notification;
 };
 

@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/utils/axios';
+import { disconnectSocket } from '@/utils/socket';
 
 interface User {
   _id: string;
@@ -105,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    disconnectSocket();
     navigate('/auth');
   };
  const updateProfile = async (data: Partial<User>) => {
