@@ -18,6 +18,16 @@ export interface IUser extends Document {
   isApproved: boolean;
   ngoId?: Schema.Types.ObjectId;
   rating: number;
+  // Profile fields
+  bio?: string;
+  website?: string;
+  address?: string;
+  // NGO / Donor preference matching
+  preferences?: {
+    foodCategories?: string[];
+    serviceAreas?: string[];
+    maxQuantityKg?: number;
+  };
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -46,6 +56,16 @@ const userSchema = new Schema(
     isApproved: { type: Boolean, default: false },
     ngoId: { type: Schema.Types.ObjectId, ref: 'User' },
     rating: { type: Number, default: 0 },
+    // Profile enrichment
+    bio:     { type: String, maxlength: 500 },
+    website: String,
+    address: String,
+    // NGO / Donor preference matching
+    preferences: {
+      foodCategories: { type: [String], default: [] },
+      serviceAreas:   { type: [String], default: [] },
+      maxQuantityKg:  { type: Number, default: 0 },
+    },
   },
   { timestamps: true }
 );
