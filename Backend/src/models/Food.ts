@@ -30,6 +30,7 @@ const foodSchema = new Schema(
     delivery_proof_img: String,
     ngo_confirmed: { type: Boolean, default: false },
     ngo_confirmed_at: Date,
+    expiry_alert_sent: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
