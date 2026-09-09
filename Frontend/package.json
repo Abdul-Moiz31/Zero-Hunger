@@ -7,7 +7,7 @@
     "node": ">=18 <=22"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "node api.js && vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
